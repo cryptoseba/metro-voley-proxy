@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metro Voley — Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a12;
+  --surface: #13131f;
+  --surface2: #1c1c2e;
+  --border: rgba(255,255,255,0.08);
+  --accent: #FF5C1A;
+  --accent2: #00e676;
+  --text: #ffffff;
+  --text2: rgba(255,255,255,0.6);
+  --text3: rgba(255,255,255,0.35);
+  --radius: 10px;
+  --success: #00e676;
+  --error: #ff4444;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+/* ── LOGIN ── */
+#login-screen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: var(--bg);
+}
+.login-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 40px; width: 360px; max-width: 90vw;
+}
+.login-logo {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+  color: var(--accent); letter-spacing: 3px; text-align: center; margin-bottom: 8px;
+}
+.login-sub { text-align: center; color: var(--text2); font-size: 13px; margin-bottom: 32px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.field input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none;
+  transition: border-color 0.2s;
+}
+.field input:focus { border-color: var(--accent); }
+.btn-primary {
+  width: 100%; background: var(--accent); color: white; border: none;
+  border-radius: var(--radius); padding: 14px; font-family: 'DM Sans', sans-serif;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+.btn-primary:hover { opacity: 0.85; }
+.login-error { color: var(--error); font-size: 13px; text-align: center; margin-top: 12px; display: none; }
+
+/* ── APP ── */
+#app { display: none; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 20px; height: 56px; display: flex; align-items: center;
+  justify-content: space-between; position: sticky; top: 0; z-index: 100;
+}
+.header-logo { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--accent); letter-spacing: 3px; }
+.header-status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+.status-dot.online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.status-dot.error { background: var(--error); }
+.btn-logout { background: none; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.btn-logout:hover { border-color: var(--accent); color: var(--text); }
+
+/* ── NAV ── */
+.nav {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; overflow-x: auto; padding: 0 20px;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-item {
+  padding: 14px 16px; font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+.nav-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-item:hover { color: var(--text); }
+
+/* ── CONTENT ── */
+.content { padding: 20px; max-width: 900px; margin: 0 auto; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+}
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px;
+}
+
+/* ── FORM ELEMENTS ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row.single { grid-template-columns: 1fr; }
+.form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 500px) {
+  .form-row { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr 1fr; }
+}
+.form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.form-group input, .form-group select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; color: var(--text);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none;
+  transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group select option { background: var(--surface2); }
+.color-input-wrap { display: flex; gap: 8px; align-items: center; }
+.color-input-wrap input[type="color"] {
+  width: 36px; height: 36px; padding: 2px; border-radius: 6px; cursor: pointer; flex-shrink: 0;
+}
+.color-input-wrap input[type="text"] { flex: 1; }
+
+/* ── BOTONES ── */
+.btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 8px; padding: 10px 18px; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn:hover { border-color: rgba(255,255,255,0.2); }
+.btn.accent { background: var(--accent); border-color: var(--accent); color: white; }
+.btn.accent:hover { opacity: 0.85; }
+.btn.sm { padding: 7px 12px; font-size: 12px; }
+.btn.danger { border-color: var(--error); color: var(--error); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+/* ── ESTADO CONEXIÓN ── */
+.match-status-card {
+  display: flex; align-items: center; gap: 16px;
+  background: var(--surface2); border-radius: var(--radius); padding: 16px;
+  margin-bottom: 16px;
+}
+.match-score { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--accent); }
+.match-info { flex: 1; }
+.match-teams { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.match-detail { font-size: 12px; color: var(--text2); }
+
+/* ── EQUIPOS ── */
+.team-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 500px) { .team-list { grid-template-columns: 1fr; } }
+.team-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; cursor: pointer;
+  transition: border-color 0.2s; position: relative;
+}
+.team-item:hover { border-color: var(--accent); }
+.team-item.selected { border-color: var(--accent); }
+.team-color-bar { height: 4px; border-radius: 2px; margin-bottom: 10px; }
+.team-item-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.team-item-colors { display: flex; gap: 4px; }
+.team-color-dot { width: 12px; height: 12px; border-radius: 50%; }
+.team-delete { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; padding: 2px; }
+.team-delete:hover { color: var(--error); }
+
+/* ── VISTA PREVIA OVERLAY ── */
+.preview-container {
+  position: relative; background: #1a1a2e; border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 16px;
+  aspect-ratio: 16/9;
+}
+.preview-iframe {
+  width: 1280px; height: 720px;
+  border: none;
+  transform-origin: top left;
+  position: absolute; top: 0; left: 0;
+}
+.preview-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at center, #1e2a4a 0%, #0d1117 100%);
+}
+
+/* ── SLIDER ── */
+.slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.slider-row label { font-size: 12px; color: var(--text2); white-space: nowrap; min-width: 140px; }
+.slider-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.slider-val { font-size: 12px; font-weight: 600; color: var(--accent); min-width: 36px; text-align: right; }
+
+/* ── ESTADO PREVIEW BUTTONS ── */
+.preview-states { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.state-btn {
+  background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+  border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+  transition: all 0.2s;
+}
+.state-btn:hover, .state-btn.active { border-color: var(--accent); color: var(--accent); }
+
+/* ── CAROUSEL ── */
+.carousel-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; margin-bottom: 8px;
+}
+.carousel-thumb { width: 80px; height: 45px; border-radius: 4px; object-fit: cover; background: var(--surface); flex-shrink: 0; }
+.carousel-info { flex: 1; min-width: 0; }
+.carousel-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.carousel-url { font-size: 11px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── OVERLAY SELECTOR ── */
+.overlay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 500px) { .overlay-grid { grid-template-columns: 1fr; } }
+.overlay-option {
+  background: var(--surface2); border: 2px solid var(--border);
+  border-radius: 10px; padding: 16px; cursor: pointer; transition: all 0.2s;
+  text-align: center;
+}
+.overlay-option.active { border-color: var(--accent); }
+.overlay-option:hover { border-color: rgba(255,92,26,0.5); }
+.overlay-icon { font-size: 28px; margin-bottom: 8px; }
+.overlay-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.overlay-desc { font-size: 12px; color: var(--text2); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 20px; font-size: 13px; z-index: 999;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.error { border-color: var(--error); color: var(--error); }
+
+/* ── TOGGLE ── */
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-size: 13px; }
+.toggle-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+input[type="checkbox"] { width: 36px; height: 20px; accent-color: var(--accent); cursor: pointer; }
+
+/* ── LOADING ── */
+.loading { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">METRO VOLEY</div>
+    <div class="login-sub">Panel de Control</div>
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="login-user" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-logo">METRO VOLEY</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="header-status">
+        <div class="status-dot" id="conn-dot"></div>
+        <span id="conn-text">Verificando...</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="nav-item active" onclick="switchTab('partido')">Partido</div>
+    <div class="nav-item" onclick="switchTab('equipos')">Equipos</div>
+    <div class="nav-item" onclick="switchTab('preview')">Vista Previa</div>
+    <div class="nav-item" onclick="switchTab('overlay')">Overlays</div>
+    <div class="nav-item" onclick="switchTab('carrusel')">Carrusel</div>
+  </div>
+
+  <div class="content">
+
+    <!-- TAB PARTIDO -->
+    <div class="tab-panel active" id="tab-partido">
+      <div class="card">
+        <div class="card-title">Estado del partido</div>
+        <div id="match-live-status">
+          <div style="color:var(--text3);font-size:13px">Cargando...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Configuración</div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Match ID</label>
+            <input type="text" id="cfg-match-id" placeholder="158191">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Equipo Local</label>
+            <select id="cfg-home-team">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Equipo Visitante</label>
+            <select id="cfg-away-team">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="saveConfig()">Guardar y aplicar</button>
+          <button class="btn" onclick="checkConnection()">Verificar conexión</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">URL del overlay</div>
+        <div style="background:var(--surface2);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px">
+          <span id="overlay-url" style="font-size:12px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+          <button class="btn sm" onclick="copyUrl()">Copiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB EQUIPOS -->
+    <div class="tab-panel" id="tab-equipos">
+      <div class="card">
+        <div class="card-title">Equipos guardados</div>
+        <div class="team-list" id="team-list">
+          <div style="color:var(--text3);font-size:13px">Cargando...</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="showTeamForm()">+ Nuevo equipo</button>
+        </div>
+      </div>
+
+      <div class="card" id="team-form-card" style="display:none">
+        <div class="card-title" id="team-form-title">Nuevo equipo</div>
+        <input type="hidden" id="team-edit-id">
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="team-name" placeholder="NOMBRE DEL EQUIPO">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Color principal</label>
+            <div class="color-input-wrap">
+              <input type="color" id="team-color-primary" value="#FF5C1A" oninput="syncColor('team-color-primary','team-color-primary-text')">
+              <input type="text" id="team-color-primary-text" value="#FF5C1A" placeholder="#FF5C1A" oninput="syncColorText('team-color-primary','team-color-primary-text')">
+            </div>
+          </div>
+        </div>
+        <div class="card-title" style="margin-top:8px">Barra del marcador (3 segmentos)</div>
+        <div class="form-row triple">
+          <div class="form-group">
+            <label>Segmento 1</label>
+            <div class="color-input-wrap">
+              <input type="color" id="team-s1" value="#FF5C1A" oninput="syncColor('team-s1','team-s1-text')">
+              <input type="text" id="team-s1-text" value="#FF5C1A" oninput="syncColorText('team-s1','team-s1-text')">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Segmento 2</label>
+            <div class="color-input-wrap">
+              <input type="color" id="team-s2" value="#FF5C1A" oninput="syncColor('team-s2','team-s2-text')">
+              <input type="text" id="team-s2-text" value="#FF5C1A" oninput="syncColorText('team-s2','team-s2-text')">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Segmento 3</label>
+            <div class="color-input-wrap">
+              <input type="color" id="team-s3" value="#FF5C1A" oninput="syncColor('team-s3','team-s3-text')">
+              <input type="text" id="team-s3-text" value="#FF5C1A" oninput="syncColorText('team-s3','team-s3-text')">
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="saveTeam()">Guardar equipo</button>
+          <button class="btn" onclick="hideTeamForm()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB PREVIEW -->
+    <div class="tab-panel" id="tab-preview">
+      <div class="card">
+        <div class="card-title">Estado a previsualizar</div>
+        <div class="preview-states">
+          <div class="state-btn active" onclick="setPreviewState('live')">Marcador en vivo</div>
+          <div class="state-btn" onclick="setPreviewState('timeout')">Tiempo muerto</div>
+          <div class="state-btn" onclick="setPreviewState('setfinish')">Fin de set</div>
+          <div class="state-btn" onclick="setPreviewState('result')">Fin de partido</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Vista previa</div>
+        <div class="preview-container" id="preview-container">
+          <div class="preview-bg"></div>
+          <iframe id="preview-iframe" class="preview-iframe" src="about:blank"></iframe>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Posición del marcador</div>
+        <div class="slider-row">
+          <label>Distancia del borde inferior</label>
+          <input type="range" id="slider-bottom" min="10" max="200" value="40" oninput="updatePosition()">
+          <span class="slider-val" id="slider-bottom-val">40px</span>
+        </div>
+        <div class="form-row single" style="margin-top:12px">
+          <div class="form-group">
+            <label>Alineación</label>
+            <select id="select-position" onchange="updatePosition()">
+              <option value="bottom-center">Centro abajo</option>
+              <option value="bottom-left">Izquierda abajo</option>
+              <option value="top-center">Centro arriba</option>
+              <option value="top-left">Izquierda arriba</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="savePositions()">Guardar posición</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB OVERLAY -->
+    <div class="tab-panel" id="tab-overlay">
+      <div class="card">
+        <div class="card-title">Overlay activo</div>
+        <div class="overlay-grid" id="overlay-grid">
+          <div style="color:var(--text3);font-size:13px">Cargando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB CARRUSEL -->
+    <div class="tab-panel" id="tab-carrusel">
+      <div class="card">
+        <div class="card-title">Imágenes del carrusel</div>
+        <div id="carousel-list">
+          <div style="color:var(--text3);font-size:13px">Cargando...</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="showCarouselForm()">+ Agregar imagen</button>
+        </div>
+      </div>
+
+      <div class="card" id="carousel-form-card" style="display:none">
+        <div class="card-title">Nueva imagen</div>
+        <input type="hidden" id="carousel-edit-id">
+        <div class="form-row single">
+          <div class="form-group">
+            <label>URL de la imagen</label>
+            <input type="text" id="carousel-url" placeholder="https://...">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Título</label>
+            <input type="text" id="carousel-title" placeholder="Sponsor">
+          </div>
+          <div class="form-group">
+            <label>Duración (segundos)</label>
+            <input type="number" id="carousel-duration" value="5" min="1" max="30">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="saveCarouselImage()">Guardar</button>
+          <button class="btn" onclick="hideCarouselForm()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://wasegmbdptbhxojlfepa.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indhc2VnbWJkcHRiaHhvamxmZXBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNjk0MzksImV4cCI6MjA5MTk0NTQzOX0.Qm_v0vD9OUIoE038rX0AHYa4QVEkrI9iEMzzEpdNzqo';
+const OVERLAY_URL = 'https://cryptoseba.github.io/metro-voley-overlay/';
+const PROXY_URL = 'https://project-pa42k.vercel.app';
+
+// Estado local
+let state = {
+  teams: [],
+  config: {},
+  overlays: [],
+  carousel: [],
+  previewState: 'live',
+  matchData: null
+};
+
+// ── API Supabase ──────────────────────────────────────────────
+async function sb(table, method='GET', body=null, filters='') {
+  const url = `${SUPABASE_URL}/rest/v1/${table}${filters}`;
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+    },
+    body: body ? JSON.stringify(body) : null
+  });
+  if (method === 'GET') return res.json();
+  return res;
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value.trim();
+  const users = await sb('users', 'GET', null, `?username=eq.${user}&password=eq.${pass}`);
+  if (users && users.length > 0) {
+    sessionStorage.setItem('mv_logged', '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('mv_logged');
+  location.reload();
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+if (sessionStorage.getItem('mv_logged')) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  setTimeout(initApp, 0);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+async function initApp() {
+  await loadAll();
+  checkConnection();
+  setInterval(checkConnection, 10000);
+  updateOverlayUrl();
+  initPreview();
+}
+
+async function loadAll() {
+  const [teams, config, overlays, carousel] = await Promise.all([
+    sb('teams', 'GET', null, '?order=name'),
+    sb('overlay_config', 'GET', null, '?id=eq.1'),
+    sb('overlays', 'GET', null, '?order=name'),
+    sb('carousel_images', 'GET', null, '?order=order_index')
+  ]);
+  state.teams = teams || [];
+  state.config = (config && config[0]) || {};
+  state.overlays = overlays || [];
+  state.carousel = carousel || [];
+  renderAll();
+}
+
+function renderAll() {
+  renderTeamList();
+  renderTeamSelects();
+  renderConfig();
+  renderOverlays();
+  renderCarousel();
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'preview') updatePreview();
+}
+
+// ── CONEXIÓN ──────────────────────────────────────────────────
+async function checkConnection() {
+  const dot = document.getElementById('conn-dot');
+  const txt = document.getElementById('conn-text');
+  const matchId = state.config.match_id || '158191';
+  try {
+    const res = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    state.matchData = data;
+    dot.className = 'status-dot online';
+    const s = data.match?.statusId;
+    txt.textContent = s === 2 ? 'Partido terminado' : s === 3 ? 'En vivo' : 'Conectado';
+    renderMatchStatus(data);
+  } catch {
+    dot.className = 'status-dot error';
+    txt.textContent = 'Sin conexión';
+    renderMatchStatus(null);
+  }
+}
+
+function renderMatchStatus(data) {
+  const el = document.getElementById('match-live-status');
+  if (!data) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px">No se pudo conectar al partido</div>';
+    return;
+  }
+  const m = data.match;
+  const home = state.teams.find(t => t.id === state.config.home_team_id);
+  const away = state.teams.find(t => t.id === state.config.away_team_id);
+  const homeName = home?.name || 'LOCAL';
+  const awayName = away?.name || 'VISITANTE';
+  el.innerHTML = `
+    <div class="match-status-card">
+      <div class="match-score">${m.homeTeamSets}-${m.awayTeamSets}</div>
+      <div class="match-info">
+        <div class="match-teams">${homeName} vs ${awayName}</div>
+        <div class="match-detail">Match ID: ${m.id} · Set ${m.currentSet} · ${m.statusId === 2 ? 'Terminado' : m.statusId === 3 ? 'En juego' : 'Esperando'}</div>
+      </div>
+    </div>`;
+}
+
+// ── CONFIG ────────────────────────────────────────────────────
+function renderConfig() {
+  document.getElementById('cfg-match-id').value = state.config.match_id || '';
+  document.getElementById('cfg-home-team').value = state.config.home_team_id || '';
+  document.getElementById('cfg-away-team').value = state.config.away_team_id || '';
+  const pos = state.config.scoreboard_position || 'bottom-center';
+  document.getElementById('select-position').value = pos;
+  const bottom = state.config.scoreboard_bottom || 40;
+  document.getElementById('slider-bottom').value = bottom;
+  document.getElementById('slider-bottom-val').textContent = bottom + 'px';
+}
+
+async function saveConfig() {
+  const cfg = {
+    match_id: document.getElementById('cfg-match-id').value.trim(),
+    home_team_id: document.getElementById('cfg-home-team').value || null,
+    away_team_id: document.getElementById('cfg-away-team').value || null,
+    updated_at: new Date().toISOString()
+  };
+  await sb('overlay_config', 'PATCH', cfg, '?id=eq.1');
+  state.config = { ...state.config, ...cfg };
+  showToast('Configuración guardada', 'success');
+  checkConnection();
+}
+
+// ── EQUIPOS ───────────────────────────────────────────────────
+function renderTeamList() {
+  const el = document.getElementById('team-list');
+  if (!state.teams.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px">No hay equipos</div>'; return; }
+  el.innerHTML = state.teams.map(t => `
+    <div class="team-item">
+      <div class="team-color-bar" style="background:linear-gradient(to right,${t.color_stripe_1},${t.color_stripe_2},${t.color_stripe_3})"></div>
+      <div class="team-item-name">${t.name}</div>
+      <div class="team-item-colors">
+        <div class="team-color-dot" style="background:${t.color_primary}"></div>
+        <div class="team-color-dot" style="background:${t.color_stripe_1}"></div>
+        <div class="team-color-dot" style="background:${t.color_stripe_2}"></div>
+        <div class="team-color-dot" style="background:${t.color_stripe_3}"></div>
+      </div>
+      <button class="team-delete" onclick="deleteTeam('${t.id}')">×</button>
+      <button class="btn sm" style="margin-top:8px;width:100%" onclick="editTeam('${t.id}')">Editar</button>
+    </div>`).join('');
+}
+
+function renderTeamSelects() {
+  const opts = '<option value="">Seleccionar...</option>' + state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  document.getElementById('cfg-home-team').innerHTML = opts;
+  document.getElementById('cfg-away-team').innerHTML = opts;
+  document.getElementById('cfg-home-team').value = state.config.home_team_id || '';
+  document.getElementById('cfg-away-team').value = state.config.away_team_id || '';
+}
+
+function showTeamForm(id) {
+  document.getElementById('team-form-card').style.display = 'block';
+  document.getElementById('team-form-title').textContent = id ? 'Editar equipo' : 'Nuevo equipo';
+  document.getElementById('team-edit-id').value = id || '';
+  if (!id) {
+    document.getElementById('team-name').value = '';
+    ['team-color-primary','team-s1','team-s2','team-s3'].forEach(id => {
+      document.getElementById(id).value = '#FF5C1A';
+      document.getElementById(id+'-text') && (document.getElementById(id+'-text').value = '#FF5C1A');
+    });
+  }
+}
+
+function hideTeamForm() {
+  document.getElementById('team-form-card').style.display = 'none';
+}
+
+function editTeam(id) {
+  const t = state.teams.find(t => t.id === id);
+  if (!t) return;
+  showTeamForm(id);
+  document.getElementById('team-name').value = t.name;
+  setColorField('team-color-primary', t.color_primary);
+  setColorField('team-s1', t.color_stripe_1);
+  setColorField('team-s2', t.color_stripe_2);
+  setColorField('team-s3', t.color_stripe_3);
+}
+
+function setColorField(id, val) {
+  document.getElementById(id).value = val;
+  const txt = document.getElementById(id+'-text');
+  if (txt) txt.value = val;
+}
+
+async function saveTeam() {
+  const id = document.getElementById('team-edit-id').value;
+  const data = {
+    name: document.getElementById('team-name').value.trim().toUpperCase(),
+    color_primary: document.getElementById('team-color-primary').value,
+    color_stripe_1: document.getElementById('team-s1').value,
+    color_stripe_2: document.getElementById('team-s2').value,
+    color_stripe_3: document.getElementById('team-s3').value,
+  };
+  if (!data.name) { showToast('Ingresá un nombre', 'error'); return; }
+  if (id) {
+    await sb('teams', 'PATCH', data, `?id=eq.${id}`);
+  } else {
+    await sb('teams', 'POST', data);
+  }
+  hideTeamForm();
+  const teams = await sb('teams', 'GET', null, '?order=name');
+  state.teams = teams || [];
+  renderTeamList();
+  renderTeamSelects();
+  showToast('Equipo guardado', 'success');
+}
+
+async function deleteTeam(id) {
+  if (!confirm('¿Eliminar este equipo?')) return;
+  await sb('teams', 'DELETE', null, `?id=eq.${id}`);
+  state.teams = state.teams.filter(t => t.id !== id);
+  renderTeamList();
+  renderTeamSelects();
+  showToast('Equipo eliminado');
+}
+
+function syncColor(colorId, textId) {
+  document.getElementById(textId).value = document.getElementById(colorId).value;
+}
+function syncColorText(colorId, textId) {
+  const val = document.getElementById(textId).value;
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) document.getElementById(colorId).value = val;
+}
+
+// ── OVERLAYS ──────────────────────────────────────────────────
+function renderOverlays() {
+  const el = document.getElementById('overlay-grid');
+  const icons = { voley: '🏐', carousel: '🖼️' };
+  el.innerHTML = state.overlays.map(o => `
+    <div class="overlay-option ${state.config.active_overlay === o.slug ? 'active' : ''}" onclick="setActiveOverlay('${o.slug}')">
+      <div class="overlay-icon">${icons[o.slug] || '📺'}</div>
+      <div class="overlay-name">${o.name}</div>
+      <div class="overlay-desc">${o.description || ''}</div>
+    </div>`).join('');
+}
+
+async function setActiveOverlay(slug) {
+  await sb('overlay_config', 'PATCH', { active_overlay: slug, updated_at: new Date().toISOString() }, '?id=eq.1');
+  state.config.active_overlay = slug;
+  renderOverlays();
+  showToast('Overlay activo: ' + slug, 'success');
+}
+
+// ── CARRUSEL ──────────────────────────────────────────────────
+function renderCarousel() {
+  const el = document.getElementById('carousel-list');
+  if (!state.carousel.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px">No hay imágenes</div>'; return; }
+  el.innerHTML = state.carousel.map(img => `
+    <div class="carousel-item">
+      <img class="carousel-thumb" src="${img.url}" onerror="this.style.background='#333'">
+      <div class="carousel-info">
+        <div class="carousel-title">${img.title || 'Sin título'}</div>
+        <div class="carousel-url">${img.url}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${img.duration_seconds}s</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn sm" onclick="editCarouselImage('${img.id}')">Editar</button>
+        <button class="btn sm danger" onclick="deleteCarouselImage('${img.id}')">Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+function showCarouselForm() {
+  document.getElementById('carousel-form-card').style.display = 'block';
+  document.getElementById('carousel-edit-id').value = '';
+  document.getElementById('carousel-url').value = '';
+  document.getElementById('carousel-title').value = '';
+  document.getElementById('carousel-duration').value = '5';
+}
+
+function hideCarouselForm() {
+  document.getElementById('carousel-form-card').style.display = 'none';
+}
+
+function editCarouselImage(id) {
+  const img = state.carousel.find(i => i.id === id);
+  if (!img) return;
+  showCarouselForm();
+  document.getElementById('carousel-edit-id').value = id;
+  document.getElementById('carousel-url').value = img.url;
+  document.getElementById('carousel-title').value = img.title || '';
+  document.getElementById('carousel-duration').value = img.duration_seconds || 5;
+}
+
+async function saveCarouselImage() {
+  const id = document.getElementById('carousel-edit-id').value;
+  const data = {
+    url: document.getElementById('carousel-url').value.trim(),
+    title: document.getElementById('carousel-title').value.trim(),
+    duration_seconds: parseInt(document.getElementById('carousel-duration').value) || 5,
+    order_index: id ? undefined : state.carousel.length
+  };
+  if (!data.url) { showToast('Ingresá una URL', 'error'); return; }
+  if (id) {
+    await sb('carousel_images', 'PATCH', data, `?id=eq.${id}`);
+  } else {
+    await sb('carousel_images', 'POST', data);
+  }
+  hideCarouselForm();
+  const carousel = await sb('carousel_images', 'GET', null, '?order=order_index');
+  state.carousel = carousel || [];
+  renderCarousel();
+  showToast('Imagen guardada', 'success');
+}
+
+async function deleteCarouselImage(id) {
+  if (!confirm('¿Eliminar esta imagen?')) return;
+  await sb('carousel_images', 'DELETE', null, `?id=eq.${id}`);
+  state.carousel = state.carousel.filter(i => i.id !== id);
+  renderCarousel();
+  showToast('Imagen eliminada');
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────
+function initPreview() {
+  resizePreview();
+  window.addEventListener('resize', resizePreview);
+}
+
+function resizePreview() {
+  const container = document.getElementById('preview-container');
+  const iframe = document.getElementById('preview-iframe');
+  if (!container) return;
+  const w = container.offsetWidth;
+  const scale = w / 1280;
+  iframe.style.transform = `scale(${scale})`;
+  container.style.height = (720 * scale) + 'px';
+}
+
+function setPreviewState(s) {
+  state.previewState = s;
+  document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  updatePreview();
+}
+
+function updatePreview() {
+  const iframe = document.getElementById('preview-iframe');
+  const home = state.teams.find(t => t.id === state.config.home_team_id);
+  const away = state.teams.find(t => t.id === state.config.away_team_id);
+  const hColor = home?.color_primary || '#FF5C1A';
+  const aColor = away?.color_primary || '#00e676';
+  const hName = home?.name || 'LOCAL';
+  const aName = away?.name || 'VISITANTE';
+  const hS = [home?.color_stripe_1||hColor, home?.color_stripe_2||hColor, home?.color_stripe_3||hColor];
+  const aS = [away?.color_stripe_1||aColor, away?.color_stripe_2||aColor, away?.color_stripe_3||aColor];
+  const bottom = state.config.scoreboard_bottom || 40;
+  const pos = state.config.scoreboard_position || 'bottom-center';
+  const ps = state.previewState;
+
+  iframe.srcdoc = buildPreviewHtml(hColor, aColor, hName, aName, hS, aS, bottom, pos, ps);
+  setTimeout(resizePreview, 100);
+}
+
+function buildPreviewHtml(hColor, aColor, hName, aName, hS, aS, bottom, pos, previewState) {
+  const showTimeout = previewState === 'timeout';
+  const showSetFinish = previewState === 'setfinish';
+  const showResult = previewState === 'result';
+  const scoreboardOpacity = (showSetFinish || showResult) ? '0' : '1';
+
+  return `<!DOCTYPE html><html><head>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:1280px;height:720px;overflow:hidden;background:transparent}
+:root{--home-color:${hColor};--away-color:${aColor};--radius:8px}
+#scoreboard{position:absolute;opacity:0;transition:opacity 0.4s;pointer-events:none}
+#scoreboard.visible{opacity:1}
+#scoreboard.bottom-center{bottom:${bottom}px;left:50%;transform:translateX(-50%)}
+#scoreboard.bottom-left{bottom:${bottom}px;left:36px}
+#scoreboard.top-center{top:${bottom}px;left:50%;transform:translateX(-50%)}
+#scoreboard.top-left{top:${bottom}px;left:36px}
+.wrapper{display:flex;align-items:center;gap:0}
+.board{display:flex;align-items:center;background:rgba(7,7,13,0.88);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);overflow:hidden;min-width:420px}
+.team{display:flex;align-items:stretch;position:relative;flex:1;min-width:0}
+.team-stripe-tri{display:flex;flex-direction:column;width:5px;flex-shrink:0}
+.team.home .team-info{flex-direction:row-reverse;text-align:right}
+.team-info{display:flex;flex-direction:column;gap:5px;padding:10px 12px;flex:1;min-width:0;position:relative;z-index:1}
+.name-row{display:flex;align-items:center;gap:6px}
+.team.home .name-row{flex-direction:row-reverse}
+.team-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#fff;line-height:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sets-row{display:flex;flex-direction:row;gap:8px;align-items:center}
+.team.home .sets-row{flex-direction:row-reverse;justify-content:flex-start}
+.set-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,0.35);flex-shrink:0}
+.serve-ball{font-size:14px;line-height:1;flex-shrink:0;visibility:hidden;margin:0 6px}
+.serve-ball.visible{visibility:visible}
+.serve-ball::after{content:'🏐'}
+.score-block{padding:6px 16px;position:relative;z-index:1;flex-shrink:0}
+.scores-row{display:flex;align-items:center;gap:10px}
+.score{font-family:'Bebas Neue',sans-serif;font-size:47px;line-height:1;color:#fff;min-width:36px;text-align:center}
+.score.home{color:${hColor}}
+.score.away{color:${aColor}}
+.score-sep{font-family:'Bebas Neue',sans-serif;font-size:28px;color:rgba(255,255,255,0.4)}
+.set-tab{display:none}
+#timeout-banner{position:absolute;bottom:${bottom+80}px;left:50%;transform:translateX(-50%);display:flex;flex-direction:row;align-items:stretch;background:rgba(7,7,13,0.88);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);opacity:${showTimeout?1:0};pointer-events:none;transition:opacity 0.5s}
+.timeout-bar{width:5px;flex-shrink:0;background:${hColor}}
+.timeout-inner{display:flex;align-items:center;gap:14px;padding:10px 24px}
+.timeout-text{display:flex;flex-direction:column;gap:2px}
+.timeout-label{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:4px;text-transform:uppercase}
+.timeout-team{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:2px}
+.timeout-icon{display:flex;gap:3px;align-items:center}
+#setfinish-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:row;align-items:stretch;background:rgba(7,7,13,0.85);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);opacity:${showSetFinish?1:0};pointer-events:none;overflow:hidden}
+.setfinish-bar{width:5px;flex-shrink:0;background:${hColor}}
+.setfinish-content{display:flex;flex-direction:column;padding:16px 32px;gap:6px;align-items:center}
+.setfinish-label{font-family:'DM Sans',sans-serif;font-size:17px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:4px;text-transform:uppercase}
+.setfinish-sets-global{font-family:'Bebas Neue',sans-serif;font-size:52px;color:#fff;letter-spacing:3px;line-height:1}
+.setfinish-set-detail{font-family:'Bebas Neue',sans-serif;font-size:24px;color:rgba(255,255,255,0.7);letter-spacing:1px;text-align:center}
+#result-banner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:row;align-items:stretch;background:rgba(7,7,13,0.85);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.08);opacity:${showResult?1:0};pointer-events:none}
+.result-color-bar{width:5px;flex-shrink:0;background:${hColor}}
+.result-content{display:flex;flex-direction:column;padding:16px 32px;gap:8px;align-items:flex-start}
+.result-winner-label{font-family:'DM Sans',sans-serif;font-size:17px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:4px;text-transform:uppercase}
+.result-main-row{display:flex;align-items:baseline;gap:14px}
+.result-winner-name{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;line-height:1;color:${hColor}}
+.result-winner-score{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;line-height:1;color:rgba(255,255,255,0.7)}
+.result-sets{display:flex;align-items:center;gap:10px}
+.result-set{font-family:'Bebas Neue',sans-serif;font-size:26px;color:rgba(255,255,255,0.8);letter-spacing:1px}
+.result-set-divider{width:1px;height:18px;background:rgba(255,255,255,0.35)}
+</style></head><body>
+<div id="setfinish-banner">
+  <div class="setfinish-bar"></div>
+  <div class="setfinish-content">
+    <div class="setfinish-label">FIN 2DO SET</div>
+    <div class="setfinish-sets-global">1-1</div>
+    <div class="setfinish-set-detail">25-22  |  21-25</div>
+  </div>
+</div>
+<div id="result-banner">
+  <div class="result-color-bar"></div>
+  <div class="result-content">
+    <div class="result-winner-label">PARTIDO TERMINADO · GANADOR</div>
+    <div class="result-main-row">
+      <div class="result-winner-name">${hName}</div>
+      <div class="result-winner-score">3-1</div>
+    </div>
+    <div class="result-sets">
+      <div class="result-set">25-22</div><div class="result-set-divider"></div>
+      <div class="result-set">21-25</div><div class="result-set-divider"></div>
+      <div class="result-set">25-18</div><div class="result-set-divider"></div>
+      <div class="result-set">25-20</div>
+    </div>
+  </div>
+</div>
+<div id="timeout-banner">
+  <div class="timeout-bar"></div>
+  <div class="timeout-inner">
+    <div class="timeout-text">
+      <div class="timeout-label">1ER TIEMPO MUERTO</div>
+      <div class="timeout-team">${hName}</div>
+    </div>
+    <div class="timeout-icon">
+      <div style="width:3px;height:16px;background:#fff;border-radius:1px"></div>
+      <div style="width:3px;height:16px;background:#fff;border-radius:1px"></div>
+    </div>
+  </div>
+</div>
+<div id="scoreboard" class="${pos} visible" style="opacity:${scoreboardOpacity}">
+  <div class="wrapper"><div class="board">
+    <div class="team home">
+      <div class="team-stripe-tri">
+        <div style="flex:1;background:${hS[0]}"></div>
+        <div style="flex:1;background:${hS[1]}"></div>
+        <div style="flex:1;background:${hS[2]}"></div>
+      </div>
+      <div class="team-info">
+        <div class="name-row">
+          <div class="serve-ball visible"></div>
+          <div class="team-name">${hName}</div>
+        </div>
+        <div class="sets-row">
+          <div class="set-dot won" style="--dot-color:${hColor};background:${hColor}"></div>
+          <div class="set-dot"></div><div class="set-dot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="score-block">
+      <div class="scores-row">
+        <div class="score home">18</div>
+        <div class="score-sep">-</div>
+        <div class="score away">17</div>
+      </div>
+    </div>
+    <div class="team away">
+      <div class="team-stripe-tri">
+        <div style="flex:1;background:${aS[0]}"></div>
+        <div style="flex:1;background:${aS[1]}"></div>
+        <div style="flex:1;background:${aS[2]}"></div>
+      </div>
+      <div class="team-info">
+        <div class="name-row">
+          <div class="team-name">${aName}</div>
+          <div class="serve-ball"></div>
+        </div>
+        <div class="sets-row">
+          <div class="set-dot"></div><div class="set-dot"></div><div class="set-dot"></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+</body></html>`;
+}
+
+// ── POSICIONES ────────────────────────────────────────────────
+function updatePosition() {
+  const bottom = parseInt(document.getElementById('slider-bottom').value);
+  const pos = document.getElementById('select-position').value;
+  document.getElementById('slider-bottom-val').textContent = bottom + 'px';
+  state.config.scoreboard_bottom = bottom;
+  state.config.scoreboard_position = pos;
+  if (document.getElementById('tab-preview').classList.contains('active')) updatePreview();
+}
+
+async function savePositions() {
+  const bottom = parseInt(document.getElementById('slider-bottom').value);
+  const pos = document.getElementById('select-position').value;
+  await sb('overlay_config', 'PATCH', {
+    scoreboard_bottom: bottom,
+    scoreboard_position: pos,
+    updated_at: new Date().toISOString()
+  }, '?id=eq.1');
+  state.config.scoreboard_bottom = bottom;
+  state.config.scoreboard_position = pos;
+  showToast('Posición guardada', 'success');
+}
+
+// ── URL ───────────────────────────────────────────────────────
+function updateOverlayUrl() {
+  document.getElementById('overlay-url').textContent = OVERLAY_URL;
+}
+
+function copyUrl() {
+  navigator.clipboard.writeText(OVERLAY_URL).then(() => showToast('URL copiada', 'success'));
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+</script>
+</body>
+</html>
