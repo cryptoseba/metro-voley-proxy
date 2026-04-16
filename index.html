@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 1280px; height: 720px;
+  overflow: hidden; background: transparent;
+}
+
+/* ── variables compartidas ── */
+:root {
+  --bg:        rgba(7,7,13,0.75);
+  --bg-dark:   rgba(7,7,13,0.75);
+  --radius:    12px;
+}
+
+/* ════════════════════════════════
+   MARCADOR
+════════════════════════════════ */
+#scoreboard {
+  position: absolute;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+#scoreboard.visible { opacity: 1; }
+#scoreboard.bottom-center { bottom: 40px; left: 50%; transform: translateX(-50%); }
+#scoreboard.top-center    { top: 56px;    left: 50%; transform: translateX(-50%); }
+#scoreboard.bottom-left   { bottom: 16px; left: 36px; }
+#scoreboard.top-left      { top: 56px;    left: 36px; }
+
+.wrapper { display: flex; flex-direction: column; align-items: center; }
+
+.board {
+  display: flex; align-items: stretch;
+  height: 60px; width: 540px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-top: none;
+}
+
+/* equipos */
+.team {
+  display: flex; align-items: center; gap: 11px;
+  padding: 0 16px; flex: 1;
+  position: relative; overflow: hidden; min-width: 0;
+}
+.team::before {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(7,7,13,0.75);
+}
+.team.home { flex-direction: row-reverse; justify-content: flex-end; }
+.team.home .team-info { align-items: flex-end; text-align: right; }
+.team.home .sets-row  { flex-direction: row-reverse; justify-content: flex-start; }
+
+/* franjas de color */
+.team-stripe {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 4px; z-index: 2;
+}
+.team-stripe-tri {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 4px; z-index: 2; display: flex;
+}
+
+/* pelota de saque */
+.serve-ball {
+  font-size: 14px; line-height: 1;
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+  opacity: 0; transition: opacity 0.25s; margin: 0 6px;
+}
+.serve-ball.visible { opacity: 1; }
+.serve-ball::after { content: '🏐'; }
+
+/* info equipo */
+.team-info {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; gap: 5px;
+  min-width: 0; flex: 1;
+}
+.name-row { display: flex; align-items: center; gap: 6px; }
+.team-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 20px;
+  letter-spacing: 2.5px; color: #ffffff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;
+}
+
+/* dots de sets */
+.sets-row { display: flex; flex-direction: row; gap: 8px; align-items: center; }
+.team.home .sets-row { flex-direction: row-reverse; justify-content: flex-start; }
+.set-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  transition: background 0.4s ease, box-shadow 0.4s ease; flex-shrink: 0;
+}
+.set-dot.won { background: var(--dot-color); box-shadow: 0 0 8px var(--dot-color); }
+
+/* bloque central puntaje */
+.score-block {
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; width: 164px; position: relative;
+}
+.score-block::before {
+  content: ''; position: absolute; inset: 0; background: rgba(7,7,13,0.90);
+}
+.score-block::after {
+  content: ''; position: absolute; inset: 0;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.scores-row {
+  display: flex; align-items: center;
+  position: relative; z-index: 1;
+}
+.score {
+  font-family: 'Bebas Neue', sans-serif; font-size: 47px;
+  line-height: 1; width: 60px; text-align: center;
+}
+.score.home { color: var(--home-color, #FF5C1A); }
+.score.away { color: var(--away-color, #00e676); }
+.score.bump { animation: bump 0.28s ease; }
+@keyframes bump {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.32); }
+  100% { transform: scale(1); }
+}
+.score-sep {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+  color: rgba(255,255,255,0.55); width: 20px; text-align: center;
+  position: relative; z-index: 1; line-height: 1;
+}
+
+/* lengüeta SET */
+.set-tab {
+  display: none;
+}
+
+/* ════════════════════════════════
+   TIEMPO MUERTO
+════════════════════════════════ */
+#timeout-banner {
+  position: absolute;
+  bottom: 130px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: stretch;
+  background: rgba(7,7,13,0.75);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+#timeout-banner.visible { opacity: 1; }
+.timeout-bar  { width: 5px; flex-shrink: 0; }
+.timeout-inner { display: flex; align-items: center; gap: 14px; padding: 10px 24px; }
+.timeout-text { display: flex; flex-direction: column; gap: 2px; }
+.timeout-label {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
+  color: #ffffff; letter-spacing: 3px; text-transform: uppercase;
+}
+.timeout-team {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px;
+  color: #ffffff; letter-spacing: 2px; line-height: 1;
+}
+.timeout-icon { display: flex; gap: 3px; align-items: center; }
+
+/* ════════════════════════════════
+   FIN DE SET
+════════════════════════════════ */
+#setfinish-banner {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: row; align-items: stretch;
+  background: rgba(7,7,13,0.85);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+  overflow: hidden;
+}
+#setfinish-banner.visible { opacity: 1; }
+.setfinish-bar { width: 5px; flex-shrink: 0; }
+.setfinish-content {
+  display: flex; flex-direction: column;
+  padding: 16px 32px; gap: 6px;
+  align-items: center;
+}
+.setfinish-label {
+  font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 600;
+  color: rgba(255,255,255,0.9); letter-spacing: 4px; text-transform: uppercase;
+}
+.setfinish-sets-score {
+  display: flex; align-items: center; justify-content: center;
+}
+.setfinish-sets-global {
+  font-family: 'Bebas Neue', sans-serif; font-size: 52px;
+  color: #ffffff; letter-spacing: 3px; line-height: 1;
+}
+.setfinish-sets-divider { display: none; }
+.setfinish-set-detail {
+  font-family: 'Bebas Neue', sans-serif; font-size: 24px;
+  color: rgba(255,255,255,0.7); letter-spacing: 1px; line-height: 1;
+  text-align: center;
+}
+
+/* ════════════════════════════════
+   RESULTADO FINAL
+════════════════════════════════ */
+#result-banner {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  display: flex; flex-direction: row; align-items: stretch;
+  background: rgba(7,7,13,0.85);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+#result-banner.visible { opacity: 1; }
+
+.result-color-bar {
+  width: 5px; flex-shrink: 0;
+}
+.result-content {
+  display: flex; flex-direction: column;
+  padding: 16px 32px; gap: 8px;
+  align-items: flex-start;
+}
+.result-winner-label {
+  font-family: 'DM Sans', sans-serif; font-size: 17px; font-weight: 600;
+  color: rgba(255,255,255,0.9); letter-spacing: 4px; text-transform: uppercase;
+}
+.result-main-row {
+  display: flex; align-items: baseline; gap: 14px;
+}
+.result-winner-name {
+  font-family: 'Bebas Neue', sans-serif; font-size: 52px;
+  letter-spacing: 3px; line-height: 1;
+}
+.result-winner-score {
+  font-family: 'Bebas Neue', sans-serif; font-size: 52px;
+  letter-spacing: 2px; line-height: 1;
+  color: rgba(255,255,255,0.7);
+}
+.result-sets { display: flex; align-items: center; gap: 10px; }
+.result-set {
+  font-family: 'Bebas Neue', sans-serif; font-size: 26px;
+  color: rgba(255,255,255,0.8); letter-spacing: 1px;
+}
+.result-set-divider {
+  width: 1px; height: 18px; background: rgba(255,255,255,0.35);
+}</style>
+</head>
+<body>
+
+<div id="setfinish-banner">
+  <div class="setfinish-bar" id="setfinishBar"></div>
+  <div class="setfinish-content">
+    <div class="setfinish-label" id="setfinishLabel">FIN 1ER SET</div>
+    <div class="setfinish-sets-score">
+      <div class="setfinish-sets-global" id="setfinishGlobal">1-0</div>
+    </div>
+    <div class="setfinish-set-detail" id="setfinishDetail">25-17</div>
+  </div>
+</div>
+
+<div id="result-banner">
+  <div class="result-color-bar" id="resultBar"></div>
+  <div class="result-content">
+    <div class="result-winner-label">PARTIDO TERMINADO · GANADOR</div>
+    <div class="result-main-row">
+      <div class="result-winner-name" id="resultWinner"></div>
+      <div class="result-winner-score" id="resultScore"></div>
+    </div>
+    <div class="result-sets" id="resultSets"></div>
+  </div>
+</div>
+
+<div id="timeout-banner">
+  <div class="timeout-bar" id="timeoutBar" style="background:#FF5C1A"></div>
+  <div class="timeout-inner">
+    <div class="timeout-text">
+      <div class="timeout-label" id="timeoutLabel">TIEMPO MUERTO</div>
+      <div class="timeout-team" id="timeoutTeam">SAN GREGORIO</div>
+    </div>
+    <div class="timeout-icon">
+      <div style="width:3px;height:16px;background:#ffffff;border-radius:1px"></div>
+      <div style="width:3px;height:16px;background:#ffffff;border-radius:1px"></div>
+    </div>
+  </div>
+</div>
+
+<div id="scoreboard">
+  <div class="wrapper">
+    <div class="board">
+
+      <!-- Local -->
+      <div class="team home">
+        <div class="team-stripe-tri" id="homeStripe">
+          <div id="homeStripe1" style="flex:1"></div>
+          <div id="homeStripe2" style="flex:1"></div>
+          <div id="homeStripe3" style="flex:1"></div>
+        </div>
+        <div class="team-info">
+          <div class="name-row">
+            <div class="serve-ball" id="homeServe"></div>
+            <div class="team-name" id="homeName">SAN GREGORIO</div>
+          </div>
+          <div class="sets-row" id="homeSets">
+            <div class="set-dot" style="--dot-color:var(--home-color)"></div>
+            <div class="set-dot" style="--dot-color:var(--home-color)"></div>
+            <div class="set-dot" style="--dot-color:var(--home-color)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marcador -->
+      <div class="score-block">
+        <div class="scores-row">
+          <div class="score home" id="homeScore">0</div>
+          <div class="score-sep">-</div>
+          <div class="score away" id="awayScore">0</div>
+        </div>
+      </div>
+
+      <!-- Visitante -->
+      <div class="team away">
+        <div class="team-stripe-tri" id="awayStripe">
+          <div id="awayStripe1" style="flex:1"></div>
+          <div id="awayStripe2" style="flex:1"></div>
+          <div id="awayStripe3" style="flex:1"></div>
+        </div>
+        <div class="team-info">
+          <div class="name-row">
+            <div class="team-name" id="awayName">VISITANTE</div>
+            <div class="serve-ball" id="awayServe"></div>
+          </div>
+          <div class="sets-row" id="awaySets">
+            <div class="set-dot" style="--dot-color:var(--away-color)"></div>
+            <div class="set-dot" style="--dot-color:var(--away-color)"></div>
+            <div class="set-dot" style="--dot-color:var(--away-color)"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="set-tab" id="setLabel">SET 1</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — editá estos valores antes del partido
+// ============================================================
+const CONFIG = {
+  matchId:      '240704',
+  homeName:     'SAN GREGORIO',
+  awayName:     'BPLP',
+  homeColor:    '#FF5C1A',           // color principal local
+  awayColor:    '#00e676',           // color principal visitante
+  homeStripe:   null,  // se carga desde config.json
+  awayStripe:   null,  // se carga desde config.json
+  position:     'bottom-center'
+};
+// ============================================================
+
+let prevHome = -1, prevAway = -1;
+let prevSetNumber = -1;
+let prevHomeSets = -1, prevAwaySets = -1;
+let localServing = null;
+
+function applyConfig(homeName, awayName) {
+  const { homeColor, awayColor, homeStripe, awayStripe, position } = CONFIG;
+
+  document.getElementById('scoreboard').className = position + ' visible';
+  document.getElementById('homeName').textContent = (homeName || 'LOCAL').toUpperCase();
+  document.getElementById('awayName').textContent = (awayName || 'VISITANTE').toUpperCase();
+
+  document.documentElement.style.setProperty('--home-color', homeColor || '#FF5C1A');
+  document.documentElement.style.setProperty('--away-color', awayColor || '#00e676');
+
+  // Barras de color
+  const hs = (homeStripe && homeStripe.length === 3) ? homeStripe : [homeColor, homeColor, homeColor];
+  const as = (awayStripe && awayStripe.length === 3) ? awayStripe : [awayColor, awayColor, awayColor];
+  document.getElementById('homeStripe1').style.background = hs[0];
+  document.getElementById('homeStripe2').style.background = hs[1];
+  document.getElementById('homeStripe3').style.background = hs[2];
+  document.getElementById('awayStripe1').style.background = as[0];
+  document.getElementById('awayStripe2').style.background = as[1];
+  document.getElementById('awayStripe3').style.background = as[2];
+}
+
+let lastTimeoutId = null;
+let lastSetFinishId = null;
+let resultShown = false;
+
+// ── Cola de banners — evita que se pisen ─────────────────────
+const bannerQueue = [];
+let bannerBusy = false;
+
+function enqueueBanner(fn) {
+  bannerQueue.push(fn);
+  if (!bannerBusy) processQueue();
+}
+
+function processQueue() {
+  if (bannerQueue.length === 0) { bannerBusy = false; return; }
+  bannerBusy = true;
+  const next = bannerQueue.shift();
+  next();
+}
+
+function bannerDone() {
+  // Pequeña pausa entre banners
+  setTimeout(processQueue, 600);
+}
+
+// ── Mostrar tiempo muerto ─────────────────────────────────────
+function showTimeout(teamName, color, label, duration) {
+  enqueueBanner(() => {
+    document.getElementById('timeoutTeam').textContent = (teamName || '').toUpperCase();
+    document.getElementById('timeoutBar').style.background = color || '#ffffff';
+    document.getElementById('timeoutLabel').textContent = label || 'TIEMPO MUERTO';
+    document.getElementById('timeout-banner').classList.add('visible');
+    setTimeout(() => {
+      document.getElementById('timeout-banner').classList.remove('visible');
+      bannerDone();
+    }, duration || 10000);
+  });
+}
+
+// ── Mostrar fin de set ────────────────────────────────────────
+function showSetFinish(setNum, homeSetsWon, awaySetsWon, allSets, winnerSide) {
+  enqueueBanner(() => {
+    const ordinals = ['1ER', '2DO', '3ER', '4TO', '5TO'];
+    const label  = `FIN ${ordinals[setNum - 1] || setNum + 'TO'} SET`;
+    const global = `${homeSetsWon}-${awaySetsWon}`;
+    const detail = allSets
+      .filter(s => s.statusId === 2)
+      .map(s => `${s.homeTeamScore}-${s.awayTeamScore}`)
+      .join('  |  ');
+    const color = winnerSide === 'home' ? CONFIG.homeColor : CONFIG.awayColor;
+
+    document.getElementById('setfinishLabel').textContent = label;
+    document.getElementById('setfinishGlobal').textContent = global;
+    document.getElementById('setfinishDetail').textContent = detail;
+    document.getElementById('setfinishBar').style.background = color;
+
+    const sb = document.getElementById('scoreboard');
+    sb.style.transition = 'opacity 0.4s ease';
+    sb.style.opacity = '0';
+    document.getElementById('setfinish-banner').classList.add('visible');
+
+    setTimeout(() => {
+      document.getElementById('setfinish-banner').classList.remove('visible');
+      sb.style.opacity = '1';
+      bannerDone();
+    }, 15000);
+  });
+}
+
+function updateSets(elId, won) {
+  document.querySelectorAll(`#${elId} .set-dot`).forEach((d, i) => d.classList.toggle('won', i < won));
+}
+
+function bump(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+}
+
+async function fetchScore() {
+  if (!CONFIG.matchId) return;
+  try {
+    const res = await fetch(`https://project-pa42k.vercel.app/api/matches/${CONFIG.matchId}/updates`);
+    if (!res.ok) { console.log('HTTP error:', res.status); return; }
+    const data = await res.json();
+
+    // Nombres desde la API si no están en CONFIG
+    if (!CONFIG._namesApplied) {
+      applyConfig(CONFIG.homeName || 'LOCAL', CONFIG.awayName || 'VISITANTE');
+      CONFIG._namesApplied = true;
+    }
+
+    const matchStatus = data.match?.statusId;
+
+    // ── 1. PARTIDO TERMINADO ──────────────────────────────────
+    if (matchStatus === 2 && !resultShown) {
+      resultShown = true;
+      // Limpiar cola, ocultar banners activos y forzar procesamiento inmediato
+      bannerQueue.length = 0;
+      bannerBusy = false;
+      document.getElementById('setfinish-banner').classList.remove('visible');
+      document.getElementById('timeout-banner').classList.remove('visible');
+
+      const isHomeWinner = data.match.homeTeamSets > data.match.awayTeamSets;
+      const winnerName   = isHomeWinner ? CONFIG.homeName : CONFIG.awayName;
+      const winnerColor  = isHomeWinner ? CONFIG.homeColor : CONFIG.awayColor;
+      const loserSets    = isHomeWinner ? data.match.awayTeamSets : data.match.homeTeamSets;
+      const winnerSets   = isHomeWinner ? data.match.homeTeamSets : data.match.awayTeamSets;
+      const sets = data.match.sets || [];
+
+      enqueueBanner(() => {
+        document.getElementById('resultSets').innerHTML = sets.map((s, i) => {
+          const divider = i > 0 ? '<div class="result-set-divider"></div>' : '';
+          return `${divider}<div class="result-set">${s.homeTeamScore}-${s.awayTeamScore}</div>`;
+        }).join('');
+        document.getElementById('resultWinner').textContent = (winnerName || 'GANADOR').toUpperCase();
+        document.getElementById('resultWinner').style.color = winnerColor || '#ffffff';
+        document.getElementById('resultScore').textContent = `${winnerSets}-${loserSets}`;
+        document.getElementById('resultBar').style.background = winnerColor || '#ffffff';
+
+        document.getElementById('scoreboard').style.transition = 'opacity 0.6s ease';
+        document.getElementById('scoreboard').style.opacity = '0';
+        document.getElementById('result-banner').classList.add('visible');
+
+        setTimeout(() => {
+          document.getElementById('result-banner').classList.remove('visible');
+          // El marcador NO vuelve — partido terminado
+        }, 20000);
+      });
+      return;
+    }
+
+    // ── 2. MARCADOR EN VIVO ───────────────────────────────────
+    const score = data.liveState?.score;
+    if (!score) return;
+
+    // Usar match.sets para el puntaje actual — más rápido que liveState.score.currentSet
+    // Si el set actual ya terminó (statusId 2), igual usamos ese score (es el final correcto)
+    const currentSetNumber = data.match?.currentSet ?? score.currentSet?.number ?? 1;
+    const currentSetData = data.match?.sets?.find(s => s.number === currentSetNumber);
+    const cs = currentSetData
+      ? { number: currentSetNumber, home: currentSetData.homeTeamScore, away: currentSetData.awayTeamScore }
+      : score.currentSet;
+
+    const homeSets = data.match?.homeTeamSets ?? score.sets?.home ?? 0;
+    const awaySets = data.match?.awayTeamSets ?? score.sets?.away ?? 0;
+
+    // Resetear al cambiar de set
+    if (cs.number !== prevSetNumber) {
+      prevSetNumber = cs.number;
+      prevHome = -1;
+      prevAway = -1;
+      localServing = null;
+    }
+
+    if (cs.home !== prevHome) {
+      document.getElementById('homeScore').textContent = cs.home;
+      if (prevHome >= 0) {
+        bump('homeScore');
+        localServing = 'home';
+        // Cerrar timeout banner si hay un punto nuevo
+        document.getElementById('timeout-banner').classList.remove('visible');
+        bannerQueue.length = 0;
+        bannerBusy = false;
+      }
+      prevHome = cs.home;
+    }
+    if (cs.away !== prevAway) {
+      document.getElementById('awayScore').textContent = cs.away;
+      if (prevAway >= 0) {
+        bump('awayScore');
+        localServing = 'away';
+        // Cerrar timeout banner si hay un punto nuevo
+        document.getElementById('timeout-banner').classList.remove('visible');
+        bannerQueue.length = 0;
+        bannerBusy = false;
+      }
+      prevAway = cs.away;
+    }
+    document.getElementById('setLabel').textContent = `SET ${cs.number}`;
+    updateSets('homeSets', homeSets);
+    updateSets('awaySets', awaySets);
+
+    // Saque: timeline si coincide con score actual (más confiable),
+    // si no coincide usamos localServing (cambio recién detectado),
+    // si tampoco hay usamos liveState.serving como último recurso
+    const timeline = data.liveState?.timeline || [];
+    const lastPoint = [...timeline].reverse().find(e =>
+      e.type === 'SCORE_POINT' && !e.undone && e.setNumber === cs.number
+    );
+    let serving;
+    if (lastPoint && lastPoint.score.home === cs.home && lastPoint.score.away === cs.away) {
+      serving = lastPoint.team;
+    } else if (localServing !== null) {
+      serving = localServing;
+    } else {
+      serving = data.liveState?.serving;
+    }
+    document.getElementById('homeServe').classList.toggle('visible', serving === 'home');
+    document.getElementById('awayServe').classList.toggle('visible', serving === 'away');
+
+    // ── 3. TIMEOUT ────────────────────────────────────────────
+    if (timeline.length > 0 && matchStatus === 3) {
+      // Buscar SET_START del set actual para anclar eventos — puede no existir
+      const setStart = [...timeline].reverse().find(e =>
+        e.type === 'SET_START' && e.setNumber === cs.number
+      );
+      const setStartTime = setStart ? new Date(setStart.timestamp).getTime() : 0;
+
+      // Solo eventos posteriores al inicio del set actual
+      const currentSetEvents = setStartTime > 0
+        ? timeline.filter(e => new Date(e.timestamp).getTime() >= setStartTime)
+        : timeline;
+
+      // Buscar el último TIMEOUT_CALLED directamente (no asumir que es el último evento)
+      const lastTimeout = [...currentSetEvents].reverse().find(e =>
+        e.type === 'TIMEOUT_CALLED' && !e.undone
+      );
+      if (lastTimeout && lastTimeout.id !== lastTimeoutId) {
+        const eventTime = new Date(lastTimeout.timestamp).getTime();
+        if (Date.now() - eventTime < 90000) {
+          lastTimeoutId = lastTimeout.id;
+          const teamName  = lastTimeout.team === 'home' ? CONFIG.homeName : CONFIG.awayName;
+          const teamColor = lastTimeout.team === 'home' ? CONFIG.homeColor : CONFIG.awayColor;
+          const count = currentSetEvents.filter(e =>
+            e.type === 'TIMEOUT_CALLED' && e.team === lastTimeout.team && !e.undone
+          ).length;
+          showTimeout(teamName, teamColor, count === 1 ? '1ER TIEMPO MUERTO' : '2DO TIEMPO MUERTO');
+        } else {
+          lastTimeoutId = lastTimeout.id;
+        }
+      }
+    }
+
+    // ── 4. FIN DE SET (solo si el partido sigue y el set no lo terminó) ──
+    if (matchStatus !== 2) {
+      const allSets = data.match?.sets || [];
+      const finishedSets = allSets.filter(s => s.statusId === 2);
+      const lastFinishedSet = finishedSets[finishedSets.length - 1];
+
+      // No mostrar si algún equipo ya tiene 3 sets (partido terminado en el fetch anterior)
+      const matchWouldBeOver = homeSets >= 3 || awaySets >= 3;
+
+      const triggerSetFinish = (winnerSide) => {
+        if (!lastFinishedSet || matchWouldBeOver) return;
+        showSetFinish(
+          lastFinishedSet.number,
+          homeSets, awaySets,
+          allSets,
+          winnerSide
+        );
+      };
+
+      // Caso 1: detectar cambio de sets ganados durante la sesión
+      if ((homeSets !== prevHomeSets || awaySets !== prevAwaySets) &&
+           prevHomeSets >= 0 && lastFinishedSet) {
+        const winner = homeSets > prevHomeSets ? 'home' : 'away';
+        triggerSetFinish(winner);
+      }
+
+      // Caso 2: primer fetch y hay un SET_FINISH reciente en el timeline (≤90s)
+      if (prevHomeSets < 0 && lastFinishedSet) {
+        const lastSetFinish = [...timeline].reverse().find(e => e.type === 'SET_FINISH' && !e.undone);
+        if (lastSetFinish) {
+          const eventTime = new Date(lastSetFinish.timestamp).getTime();
+          if (Date.now() - eventTime < 90000) {
+            triggerSetFinish(lastSetFinish.data?.winner);
+          }
+        }
+      }
+
+      prevHomeSets = homeSets;
+      prevAwaySets = awaySets;
+    }
+
+  } catch(e) { /* silencioso */ }
+}
+
+// ── Iniciar overlay directamente con CONFIG hardcodeado ──
+applyConfig(CONFIG.homeName, CONFIG.awayName);
+fetchScore();
+setInterval(fetchScore, 3000);
+
+// ── Live preview desde el panel ──
+window.addEventListener('message', (e) => {
+  if (e.data?.type !== 'CONFIG_UPDATE') return;
+  const c = e.data.config;
+  if (c.matchId)   CONFIG.matchId   = c.matchId;
+  if (c.homeName)  CONFIG.homeName  = c.homeName;
+  if (c.awayName)  CONFIG.awayName  = c.awayName;
+  if (c.homeColor) CONFIG.homeColor = c.homeColor;
+  if (c.awayColor) CONFIG.awayColor = c.awayColor;
+  if (c.homeStripe) CONFIG.homeStripe = c.homeStripe;
+  if (c.awayStripe) CONFIG.awayStripe = c.awayStripe;
+  if (c.position)  CONFIG.position  = c.position;
+  applyConfig(CONFIG.homeName, CONFIG.awayName);
+});
+</script>
+</body>
+</html>
