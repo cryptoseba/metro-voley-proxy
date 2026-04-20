@@ -126,6 +126,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 @media(max-width:600px){ .overlay-grid { grid-template-columns:1fr 1fr; } }
 .overlay-option { background:var(--surface2); border:2px solid var(--border); border-radius:10px; padding:16px; cursor:pointer; transition:all 0.2s; text-align:center; }
 .overlay-option.active { border-color:var(--accent); }
+.overlay-option.selected { border-color:rgba(255,255,255,0.3); background:var(--surface); }
 .overlay-option:hover { border-color:rgba(255,92,26,0.5); }
 .overlay-icon { font-size:28px; margin-bottom:8px; }
 .overlay-name { font-size:14px; font-weight:600; margin-bottom:4px; }
@@ -403,6 +404,7 @@ const PROXY_URL   = 'https://project-pa42k.vercel.app';
 let state = { teams:[], config:{}, overlays:[], carousel:[], previewState:'live', matchData:null };
 let plantelSide = 'home';
 let carouselIdx = 0;
+let selectedOverlay = null;
 
 // ── API Supabase ──────────────────────────────────────────────
 async function sb(table, method='GET', body=null, filters='') {
@@ -672,26 +674,55 @@ const OVERLAY_SLUGS_DEFAULT = [
 function renderOverlays() {
   const el = document.getElementById('overlay-grid');
   const overlays = state.overlays.length ? state.overlays : OVERLAY_SLUGS_DEFAULT;
-  const active = state.config.active_overlay || 'voley';
+  const active   = state.config.active_overlay || 'voley';
+  if (!selectedOverlay) selectedOverlay = active;
   el.innerHTML = overlays.map(o => `
-    <div class="overlay-option ${active === o.slug ? 'active' : ''}" onclick="setActiveOverlay('${o.slug}')">
+    <div class="overlay-option ${active === o.slug ? 'active' : ''} ${selectedOverlay === o.slug && active !== o.slug ? 'selected' : ''}"
+         onclick="selectOverlay('${o.slug}')">
       <div class="overlay-icon">${OVERLAY_ICONS[o.slug] || '📺'}</div>
       <div class="overlay-name">${o.name}</div>
       <div class="overlay-desc">${o.description || ''}</div>
       ${active === o.slug ? '<div class="overlay-active-badge">ACTIVO</div>' : ''}
     </div>`).join('');
+  renderActivateBtn();
 }
 
-async function setActiveOverlay(slug) {
+function renderActivateBtn() {
+  const active = state.config.active_overlay || 'voley';
+  let btn = document.getElementById('btn-activate-overlay');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'btn-activate-overlay';
+    btn.className = 'btn accent';
+    btn.style.cssText = 'width:100%;margin-top:16px;padding:14px;font-size:14px;letter-spacing:1px';
+    document.getElementById('overlay-grid').after(btn);
+  }
+  if (selectedOverlay && selectedOverlay !== active) {
+    const overlays = state.overlays.length ? state.overlays : OVERLAY_SLUGS_DEFAULT;
+    const o = overlays.find(x => x.slug === selectedOverlay);
+    btn.textContent = `✓ Activar ${o?.name || selectedOverlay}`;
+    btn.style.display = 'block';
+    btn.onclick = () => activateOverlay(selectedOverlay);
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+function selectOverlay(slug) {
+  selectedOverlay = slug;
+  renderOverlays();
+  refreshOverlayPreview(slug);
+}
+
+async function activateOverlay(slug) {
   await sb('overlay_config','PATCH',{ active_overlay:slug, updated_at:new Date().toISOString() },'?id=eq.1');
   state.config.active_overlay = slug;
   renderOverlays();
-  refreshOverlayPreview();
-  showToast(`Overlay activo: ${slug}`, 'success');
+  showToast(`Overlay activado: ${slug}`, 'success');
 }
 
-async function refreshOverlayPreview() {
-  const active = state.config.active_overlay || 'voley';
+async function refreshOverlayPreview(slug) {
+  const active = slug || state.config.active_overlay || 'voley';
   document.getElementById('preview-voley').style.display    = 'none';
   document.getElementById('preview-plantel').style.display  = 'none';
   document.getElementById('preview-carousel').style.display = 'none';
@@ -702,7 +733,8 @@ async function refreshOverlayPreview() {
     document.getElementById('preview-voley').style.display = 'block';
     const iframe = document.getElementById('preview-iframe-voley');
     iframe.srcdoc = buildPreviewHtml('live');
-    setTimeout(resizePreview, 100);
+    // Esperar a que el DOM calcule el ancho real del contenedor
+    requestAnimationFrame(() => setTimeout(resizePreview, 50));
   } else if (active === 'plantel') {
     document.getElementById('overlay-preview-label').textContent = 'Vista previa — Plantel';
     document.getElementById('preview-plantel').style.display = 'block';
