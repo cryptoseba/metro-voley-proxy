@@ -473,6 +473,7 @@ function renderAll() {
   renderConfig();
   renderOverlays();
   renderCarousel();
+  plantelSide = state.config.plantel_team || 'home';
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -664,11 +665,12 @@ function updatePreview() {
 }
 
 // ── OVERLAYS ──────────────────────────────────────────────────
-const OVERLAY_ICONS = { voley:'🏐', carousel:'🖼️', plantel:'👥' };
+const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', none:'⭕' };
 const OVERLAY_SLUGS_DEFAULT = [
-  { slug:'voley',    name:'Marcador',  description:'Marcador en vivo con datos de metrovoley' },
-  { slug:'plantel',  name:'Plantel',   description:'Presentación de jugadoras antes del partido' },
-  { slug:'carousel', name:'Carrusel',  description:'Publicidades y banners en rotación' }
+  { slug:'voley',    name:'Marcador',   description:'Marcador en vivo con datos de metrovoley' },
+  { slug:'plantel',  name:'Plantel',    description:'Presentación de jugadoras antes del partido' },
+  { slug:'carousel', name:'Publicidad', description:'Imágenes rotativas de sponsors' },
+  { slug:'none',     name:'Ninguno',    description:'Apaga todos los overlays' }
 ];
 
 function renderOverlays() {
@@ -715,9 +717,10 @@ function selectOverlay(slug) {
 }
 
 async function activateOverlay(slug) {
-  await sb('overlay_config','PATCH',{ active_overlay:slug, updated_at:new Date().toISOString() },'?id=eq.1');
   state.config.active_overlay = slug;
   renderOverlays();
+  showToast(`Activando ${slug}...`);
+  await sb('overlay_config','PATCH',{ active_overlay:slug, updated_at:new Date().toISOString() },'?id=eq.1');
   showToast(`Overlay activado: ${slug}`, 'success');
 }
 
@@ -808,8 +811,10 @@ async function loadPlantelPreview() {
   }
 }
 
-function switchPlantelTeam() {
+async function switchPlantelTeam() {
   plantelSide = plantelSide === 'home' ? 'away' : 'home';
+  await sb('overlay_config', 'PATCH', { plantel_team: plantelSide, updated_at: new Date().toISOString() }, '?id=eq.1');
+  state.config.plantel_team = plantelSide;
   loadPlantelPreview();
 }
 
