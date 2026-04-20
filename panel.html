@@ -665,7 +665,7 @@ function updatePreview() {
 }
 
 // ── OVERLAYS ──────────────────────────────────────────────────
-const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', none:'⭕' };
+const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', none:'🚫' };
 const OVERLAY_SLUGS_DEFAULT = [
   { slug:'voley',    name:'Marcador',   description:'Marcador en vivo con datos de metrovoley' },
   { slug:'plantel',  name:'Plantel',    description:'Presentación de jugadoras antes del partido' },
@@ -675,7 +675,7 @@ const OVERLAY_SLUGS_DEFAULT = [
 
 function renderOverlays() {
   const el = document.getElementById('overlay-grid');
-  const overlays = state.overlays.length ? state.overlays : OVERLAY_SLUGS_DEFAULT;
+  const overlays = OVERLAY_SLUGS_DEFAULT;
   const active   = state.config.active_overlay || 'voley';
   if (!selectedOverlay) selectedOverlay = active;
   el.innerHTML = overlays.map(o => `
