@@ -542,20 +542,64 @@ function switchTab(tab) {
 async function checkConnection() {
   const dot = document.getElementById('conn-dot');
   const txt = document.getElementById('conn-text');
-  const matchId = state.config.match_id || '158191';
+  const matchId = state.config.match_id;
+  const dataSource = state.config.data_source || 'metrovoley';
+
+  // Limpiar estado anterior mientras verifica
+  dot.className = 'status-dot';
+  txt.textContent = 'Verificando...';
+  document.getElementById('match-live-status').innerHTML = '<div style="color:var(--text3);font-size:13px">Verificando...</div>';
+
+  if (!matchId) {
+    dot.className = 'status-dot error';
+    txt.textContent = 'Sin Match ID';
+    document.getElementById('match-live-status').innerHTML = '<div style="color:var(--text3);font-size:13px">Ingresá un Match ID</div>';
+    return;
+  }
+
   try {
-    const res = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    state.matchData = data;
-    dot.className = 'status-dot online';
-    const s = data.match?.statusId;
-    txt.textContent = s === 2 ? 'Partido terminado' : s === 3 ? 'En vivo' : 'Conectado';
-    renderMatchStatus(data);
-  } catch {
+    if (dataSource === 'dataproject') {
+      // Para DataProject verificamos via negotiate + invoke
+      const neg = await fetch(`${PROXY_URL}/api/signalr/negotiate?matchId=${matchId}`);
+      const negData = await neg.json();
+      if (negData.error) throw new Error(negData.error);
+
+      const invokeRes = await fetch(`${PROXY_URL}/api/signalr/invoke`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token: negData.token, messageId: negData.messageId, method: 'getLiveScoreData_From_DV', args: [matchId, 'fmv'], invokeId: 1 })
+      });
+      const invokeData = await invokeRes.json();
+      if (invokeData.error || !invokeData.result) throw new Error(invokeData.error || 'Sin datos');
+
+      const score = invokeData.result;
+      dot.className = 'status-dot online';
+      const status = score.Status === 2 ? 'Terminado' : score.Status === 1 ? 'En juego' : 'Sin empezar';
+      txt.textContent = status;
+      const home = state.teams.find(t => t.id === state.config.home_team_id);
+      const away = state.teams.find(t => t.id === state.config.away_team_id);
+      document.getElementById('match-live-status').innerHTML = `<div class="match-status-card">
+        <div class="match-score">${score.WonSetHome}-${score.WonSetGuest}</div>
+        <div class="match-info">
+          <div class="match-teams">${home?.name||score.HomeEmpty||'LOCAL'} vs ${away?.name||score.GuestEmpty||'VISITANTE'}</div>
+          <div class="match-detail">Match ID: ${matchId} · ${status} · DataProject</div>
+        </div>
+      </div>`;
+    } else {
+      const res = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data.match) throw new Error('Sin datos');
+      state.matchData = data;
+      dot.className = 'status-dot online';
+      const s = data.match?.statusId;
+      txt.textContent = s === 2 ? 'Partido terminado' : s === 3 ? 'En vivo' : 'Conectado';
+      renderMatchStatus(data);
+    }
+  } catch(e) {
     dot.className = 'status-dot error';
     txt.textContent = 'Sin conexión';
-    renderMatchStatus(null);
+    document.getElementById('match-live-status').innerHTML = `<div style="color:var(--error);font-size:13px">No se pudo conectar — ${e.message}</div>`;
   }
 }
 
