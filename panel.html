@@ -281,6 +281,49 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
           <button class="btn" onclick="hideTeamForm()">Cancelar</button>
         </div>
       </div>
+
+      <!-- Jugadoras del equipo seleccionado -->
+      <div class="card" id="players-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="card-title" style="margin-bottom:0" id="players-card-title">Jugadoras</div>
+          <button class="btn accent sm" onclick="showPlayerForm()">+ Agregar</button>
+        </div>
+        <div id="players-list"><div style="color:var(--text3);font-size:13px">Seleccioná un equipo para ver jugadoras</div></div>
+      </div>
+
+      <!-- Form jugadora -->
+      <div class="card" id="player-form-card" style="display:none">
+        <div class="card-title" id="player-form-title">Nueva jugadora</div>
+        <input type="hidden" id="player-edit-id">
+        <input type="hidden" id="player-team-id">
+        <div class="form-row">
+          <div class="form-group"><label>Número</label><input type="number" id="player-number" placeholder="10" min="1" max="99"></div>
+          <div class="form-group"><label>Apellido</label><input type="text" id="player-last-name" placeholder="GONZALEZ"></div>
+        </div>
+        <div class="form-row single">
+          <div class="form-group"><label>Nombre</label><input type="text" id="player-first-name" placeholder="María"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Capitana</label>
+            <select id="player-captain">
+              <option value="false">No</option>
+              <option value="true">Sí</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Libero</label>
+            <select id="player-libero">
+              <option value="false">No</option>
+              <option value="true">Sí</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="savePlayer()">Guardar</button>
+          <button class="btn" onclick="hidePlayerForm()">Cancelar</button>
+        </div>
+      </div>
     </div>
 
     <!-- TAB POSICIÓN -->
@@ -563,7 +606,7 @@ function renderTeamList() {
   const el = document.getElementById('team-list');
   if (!state.teams.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px">No hay equipos</div>'; return; }
   el.innerHTML = state.teams.map(t => `
-    <div class="team-item">
+    <div class="team-item" onclick="loadPlayers('${t.id}', '${t.name}')">
       <div class="team-color-bar" style="background:linear-gradient(to right,${t.color_stripe_1},${t.color_stripe_2},${t.color_stripe_3})"></div>
       <div class="team-item-name">${t.name}</div>
       <div class="team-item-colors">
@@ -572,8 +615,8 @@ function renderTeamList() {
         <div class="team-color-dot" style="background:${t.color_stripe_2}"></div>
         <div class="team-color-dot" style="background:${t.color_stripe_3}"></div>
       </div>
-      <button class="team-delete" onclick="deleteTeam('${t.id}')">×</button>
-      <button class="btn sm" style="margin-top:8px;width:100%" onclick="editTeam('${t.id}')">Editar</button>
+      <button class="team-delete" onclick="event.stopPropagation();deleteTeam('${t.id}')">×</button>
+      <button class="btn sm" style="margin-top:8px;width:100%" onclick="event.stopPropagation();editTeam('${t.id}')">Editar</button>
     </div>`).join('');
 }
 
@@ -640,7 +683,93 @@ async function deleteTeam(id) {
   showToast('Equipo eliminado');
 }
 
-function syncColor(colorId, textId) { document.getElementById(textId).value = document.getElementById(colorId).value; }
+// ── JUGADORAS ─────────────────────────────────────────────────
+let currentPlayersTeamId = null;
+
+async function loadPlayers(teamId, teamName) {
+  currentPlayersTeamId = teamId;
+  document.getElementById('players-card').style.display = 'block';
+  document.getElementById('players-card-title').textContent = `Jugadoras — ${teamName}`;
+  const players = await sb('players','GET',null,`?team_id=eq.${teamId}&order=number`) || [];
+  renderPlayersList(players, teamId);
+}
+
+function renderPlayersList(players, teamId) {
+  const el = document.getElementById('players-list');
+  if (!players.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px">No hay jugadoras cargadas</div>';
+    return;
+  }
+  el.innerHTML = players.map(p => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:6px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);width:32px;text-align:center">${p.number}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${p.last_name.toUpperCase()}${p.first_name ? ', ' + p.first_name : ''}</div>
+        <div style="font-size:11px;color:var(--text3)">${p.is_captain ? 'Capitana · ' : ''}${p.is_libero ? 'Libero' : ''}</div>
+      </div>
+      <button class="btn sm" onclick="editPlayer('${p.id}','${teamId}')">Editar</button>
+      <button class="btn sm danger" onclick="deletePlayer('${p.id}','${teamId}')">×</button>
+    </div>`).join('');
+}
+
+function showPlayerForm(teamId) {
+  const tid = teamId || currentPlayersTeamId;
+  document.getElementById('player-form-card').style.display = 'block';
+  document.getElementById('player-form-title').textContent = 'Nueva jugadora';
+  document.getElementById('player-edit-id').value = '';
+  document.getElementById('player-team-id').value = tid;
+  document.getElementById('player-number').value = '';
+  document.getElementById('player-last-name').value = '';
+  document.getElementById('player-first-name').value = '';
+  document.getElementById('player-captain').value = 'false';
+  document.getElementById('player-libero').value = 'false';
+}
+
+function hidePlayerForm() {
+  document.getElementById('player-form-card').style.display = 'none';
+}
+
+async function editPlayer(id, teamId) {
+  const players = await sb('players','GET',null,`?id=eq.${id}`) || [];
+  const p = players[0];
+  if (!p) return;
+  showPlayerForm(teamId);
+  document.getElementById('player-edit-id').value = id;
+  document.getElementById('player-number').value = p.number;
+  document.getElementById('player-last-name').value = p.last_name;
+  document.getElementById('player-first-name').value = p.first_name || '';
+  document.getElementById('player-captain').value = p.is_captain ? 'true' : 'false';
+  document.getElementById('player-libero').value = p.is_libero ? 'true' : 'false';
+  document.getElementById('player-form-title').textContent = 'Editar jugadora';
+}
+
+async function savePlayer() {
+  const id     = document.getElementById('player-edit-id').value;
+  const teamId = document.getElementById('player-team-id').value;
+  const data = {
+    team_id:    teamId,
+    number:     parseInt(document.getElementById('player-number').value),
+    last_name:  document.getElementById('player-last-name').value.trim().toUpperCase(),
+    first_name: document.getElementById('player-first-name').value.trim(),
+    is_captain: document.getElementById('player-captain').value === 'true',
+    is_libero:  document.getElementById('player-libero').value === 'true',
+  };
+  if (!data.last_name || !data.number) { showToast('Completá número y apellido', 'error'); return; }
+  if (id) await sb('players','PATCH',data,`?id=eq.${id}`);
+  else    await sb('players','POST',data);
+  hidePlayerForm();
+  const players = await sb('players','GET',null,`?team_id=eq.${teamId}&order=number`) || [];
+  renderPlayersList(players, teamId);
+  showToast('Jugadora guardada', 'success');
+}
+
+async function deletePlayer(id, teamId) {
+  if (!confirm('¿Eliminar esta jugadora?')) return;
+  await sb('players','DELETE',null,`?id=eq.${id}`);
+  const players = await sb('players','GET',null,`?team_id=eq.${teamId}&order=number`) || [];
+  renderPlayersList(players, teamId);
+  showToast('Jugadora eliminada');
+}
 function syncColorText(colorId, textId) { const v = document.getElementById(textId).value; if(/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById(colorId).value = v; }
 
 // ── POSICIÓN / PREVIEW MARCADOR ───────────────────────────────
@@ -676,12 +805,13 @@ function updatePreview() {
 }
 
 // ── OVERLAYS ──────────────────────────────────────────────────
-const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', none:'🚫' };
+const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', plantel_manual:'📋', none:'🚫' };
 const OVERLAY_SLUGS_DEFAULT = [
-  { slug:'voley',    name:'Marcador',   description:'Marcador en vivo con datos de metrovoley' },
-  { slug:'plantel',  name:'Plantel',    description:'Presentación de jugadoras antes del partido' },
-  { slug:'carousel', name:'Publicidad', description:'Imágenes rotativas de sponsors' },
-  { slug:'none',     name:'Ninguno',    description:'Apaga todos los overlays' }
+  { slug:'voley',          name:'Marcador',       description:'Marcador en vivo con datos de la API' },
+  { slug:'plantel',        name:'Plantel Auto',    description:'Jugadoras desde la API (MetroVoley/DataProject)' },
+  { slug:'plantel_manual', name:'Plantel Manual',  description:'Jugadoras cargadas manualmente en Supabase' },
+  { slug:'carousel',       name:'Publicidad',      description:'Imágenes rotativas de sponsors' },
+  { slug:'none',           name:'Ninguno',         description:'Apaga todos los overlays' }
 ];
 
 function renderOverlays() {
