@@ -715,49 +715,46 @@ function renderMatchList(el, matches, source) {
     return;
   }
   el.innerHTML = matches.map(m => {
-    const isDP = source === 'dataproject';
+    // Nombres — el proxy siempre manda home/away normalizados
+    const homeName = m.homeTeam?.name || m.home || `Partido ${m.id}`;
+    const awayName = m.awayTeam?.name || m.away || '';
 
-    // Nombres
-    const homeName = isDP ? (m.HomeEmpty || '—') : (m.homeTeam?.name || m.home || `Partido ${m.id}`);
-    const awayName = isDP ? (m.GuestEmpty || '—') : (m.awayTeam?.name || m.away || '');
+    // Estado en vivo — proxy manda statusId:3 para en juego
+    const isLive = m.statusId === 3 || m.status === 3;
 
-    // Estado en vivo
-    const isLive = isDP ? (m.Status === 1) : (m.statusId === 3 || m.status === 3);
-
-    // Score (sets ganados)
-    const scoreHome = isDP ? (m.WonSetHome ?? 0) : (m.homeTeamSets ?? 0);
-    const scoreAway = isDP ? (m.WonSetGuest ?? 0) : (m.awayTeamSets ?? 0);
-    const score = isLive ? `${scoreHome}-${scoreAway}` : null;
-
-    // Hora
-    let time = '';
-    if (isDP && m.MatchDateTime) {
-      time = m.MatchDateTime.slice(11, 16); // "19:00"
-    } else if (m.time) {
-      time = m.time.slice(0, 5);
+    // Score — proxy de DataProject manda campo 'score' ("1-0"), MetroVoley manda homeTeamSets/awayTeamSets
+    let scoreDisplay = null;
+    if (isLive) {
+      if (m.score) {
+        scoreDisplay = m.score; // "1-0" ya formateado por el proxy DP
+      } else if (m.homeTeamSets !== undefined) {
+        scoreDisplay = `${m.homeTeamSets}-${m.awayTeamSets}`;
+      }
     }
 
-    // Fecha formateada
-    const rawDate = isDP ? m.MatchDateTime : m.scheduledAt;
-    const dateStr = rawDate ? new Date(rawDate).toLocaleDateString('es-AR', {weekday:'short', day:'numeric', month:'short'}) : '';
+    // Hora
+    const time = m.time ? m.time.slice(0, 5) : '';
+
+    // Fecha
+    const dateStr = m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('es-AR', {weekday:'short', day:'numeric', month:'short'}) : '';
 
     // Meta: categoría · división · sede
-    const metaParts = isDP
-      ? ['División de Honor', m.Status === 2 ? 'Terminado' : m.Status === 1 ? 'En juego' : null].filter(Boolean)
+    const metaParts = source === 'dataproject'
+      ? ['División de Honor']
       : [m.categoryName, m.divisionName, m.venue || m.courtName].filter(Boolean);
     const meta = metaParts.join(' · ');
 
-    const id   = m.ChampionshipMatchID || m.id;
+    const id = m.id;
     const mJson = JSON.stringify(m).replace(/"/g,'&quot;');
     return `<div class="match-card" id="mc-${id}" onclick="selectMatchCard(${mJson}, '${source}')">
       <div class="match-card-teams">
         <div class="match-card-name">${homeName} vs ${awayName}</div>
         ${meta ? `<div class="match-card-meta">${meta}</div>` : ''}
-        ${dateStr ? `<div class="match-card-meta" style="margin-top:2px;opacity:0.7">${dateStr}${time ? ' · ' + time : ''}</div>` : ''}
+        ${dateStr || time ? `<div class="match-card-meta" style="margin-top:2px;opacity:0.7">${[dateStr, time].filter(Boolean).join(' · ')}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
         ${isLive ? '<span class="match-card-status status-live">EN VIVO</span>' : time ? `<span class="match-card-status status-soon">${time}</span>` : ''}
-        ${score ? `<div class="match-card-score">${score}</div>` : ''}
+        ${scoreDisplay ? `<div class="match-card-score">${scoreDisplay}</div>` : ''}
       </div>
     </div>`;
   }).join('') + `<button class="btn-aplicar" id="btn-aplicar-lista" disabled onclick="aplicarPartidoSeleccionado()">Aplicar partido seleccionado</button>`;
