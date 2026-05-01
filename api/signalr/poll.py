@@ -20,7 +20,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             poll_url = f'{BASE}/poll?transport=longPolling&clientProtocol=2.1&connectionToken={urllib.parse.quote(token)}&connectionData={urllib.parse.quote(HUB_DATA)}&messageId={urllib.parse.quote(msg_id)}'
             poll_req = urllib.request.Request(poll_url, headers=HEADERS)
-            poll_resp = urllib.request.urlopen(poll_req, timeout=12)
+            poll_resp = urllib.request.urlopen(poll_req, timeout=8)
             poll_data = json.loads(poll_resp.read())
 
             self.send_response(200)
