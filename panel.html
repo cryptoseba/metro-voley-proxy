@@ -223,6 +223,15 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         <div class="form-row single">
           <div class="form-group"><label>Match ID</label><input type="text" id="cfg-match-id" placeholder="158191"></div>
         </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label>Fuente de datos</label>
+            <select id="cfg-data-source">
+              <option value="metrovoley">🔵 MetroVoley (metrovoley.com.ar)</option>
+              <option value="dataproject">🟢 DataProject (fmv-web.dataproject.com)</option>
+            </select>
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group"><label>Equipo Local</label><select id="cfg-home-team"><option value="">Seleccionar...</option></select></div>
           <div class="form-group"><label>Equipo Visitante</label><select id="cfg-away-team"><option value="">Seleccionar...</option></select></div>
@@ -527,6 +536,7 @@ function renderConfig() {
   document.getElementById('cfg-match-id').value = state.config.match_id || '';
   document.getElementById('cfg-home-team').value = state.config.home_team_id || '';
   document.getElementById('cfg-away-team').value = state.config.away_team_id || '';
+  document.getElementById('cfg-data-source').value = state.config.data_source || 'metrovoley';
   const bottom = state.config.scoreboard_bottom || 40;
   const pos    = state.config.scoreboard_position || 'bottom-center';
   document.getElementById('slider-bottom').value = bottom;
@@ -539,6 +549,7 @@ async function saveConfig() {
     match_id:      document.getElementById('cfg-match-id').value.trim(),
     home_team_id:  document.getElementById('cfg-home-team').value || null,
     away_team_id:  document.getElementById('cfg-away-team').value || null,
+    data_source:   document.getElementById('cfg-data-source').value,
     updated_at:    new Date().toISOString()
   };
   await sb('overlay_config','PATCH',cfg,'?id=eq.1');
