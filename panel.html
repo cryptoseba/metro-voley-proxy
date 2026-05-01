@@ -227,8 +227,8 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
           <div class="form-group">
             <label>Fuente de datos</label>
             <select id="cfg-data-source">
-              <option value="metrovoley">🔵 MetroVoley (metrovoley.com.ar)</option>
-              <option value="dataproject">🟢 DataProject (fmv-web.dataproject.com)</option>
+              <option value="metrovoley">🔵 Inferiores FMV (metrovoley.com.ar)</option>
+              <option value="dataproject">🟢 División de Honor (fmv-web.dataproject.com)</option>
             </select>
           </div>
         </div>
@@ -807,11 +807,11 @@ function updatePreview() {
 // ── OVERLAYS ──────────────────────────────────────────────────
 const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', plantel_manual:'📋', none:'🚫' };
 const OVERLAY_SLUGS_DEFAULT = [
-  { slug:'voley',          name:'Marcador',       description:'Marcador en vivo con datos de la API' },
-  { slug:'plantel',        name:'Plantel Auto',    description:'Jugadoras desde la API (MetroVoley/DataProject)' },
-  { slug:'plantel_manual', name:'Plantel Manual',  description:'Jugadoras cargadas manualmente en Supabase' },
-  { slug:'carousel',       name:'Publicidad',      description:'Imágenes rotativas de sponsors' },
-  { slug:'none',           name:'Ninguno',         description:'Apaga todos los overlays' }
+  { slug:'voley',          name:'Marcador',          description:'Marcador en vivo con datos de la API' },
+  { slug:'plantel',        name:'Plantel Div. Honor', description:'Jugadoras desde DataProject (División de Honor)' },
+  { slug:'plantel_manual', name:'Plantel Inferiores', description:'Jugadoras cargadas manualmente (FMV Inferiores)' },
+  { slug:'carousel',       name:'Publicidad',         description:'Imágenes rotativas de sponsors' },
+  { slug:'none',           name:'Ninguno',            description:'Apaga todos los overlays' }
 ];
 
 function renderOverlays() {
