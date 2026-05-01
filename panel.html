@@ -745,8 +745,8 @@ function renderMatchList(el, matches, source) {
     const meta = metaParts.join(' · ');
 
     const id = m.id;
-    const mJson = JSON.stringify(m).replace(/"/g,'&quot;');
-    return `<div class="match-card" id="mc-${id}" onclick="selectMatchCard(${mJson}, '${source}')">
+    const mEncoded = btoa(unescape(encodeURIComponent(JSON.stringify(m))));
+    return `<div class="match-card" id="mc-${id}" onclick="selectMatchCard(JSON.parse(decodeURIComponent(escape(atob('${mEncoded}')))), '${source}')">
       <div class="match-card-teams">
         <div class="match-card-name">${homeName} vs ${awayName}</div>
         ${meta ? `<div class="match-card-meta">${meta}</div>` : ''}
