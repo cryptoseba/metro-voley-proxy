@@ -841,8 +841,7 @@ function renderActivateBtn() {
     document.getElementById('overlay-grid').after(btn);
   }
   if (selectedOverlay && selectedOverlay !== active) {
-    const overlays = state.overlays.length ? state.overlays : OVERLAY_SLUGS_DEFAULT;
-    const o = overlays.find(x => x.slug === selectedOverlay);
+    const o = OVERLAY_SLUGS_DEFAULT.find(x => x.slug === selectedOverlay);
     btn.textContent = `✓ Activar ${o?.name || selectedOverlay}`;
     btn.style.display = 'block';
     btn.onclick = () => activateOverlay(selectedOverlay);
@@ -877,13 +876,15 @@ async function refreshOverlayPreview(slug) {
     document.getElementById('preview-voley').style.display = 'block';
     const iframe = document.getElementById('preview-iframe-voley');
     iframe.srcdoc = buildPreviewHtml('live');
-    // Esperar a que el DOM calcule el ancho real del contenedor
-    requestAnimationFrame(() => setTimeout(resizePreview, 50));
-  } else if (active === 'plantel') {
-    document.getElementById('overlay-preview-label').textContent = 'Vista previa — Plantel';
+    // Múltiples intentos para asegurar que el contenedor tenga ancho real
+    setTimeout(resizePreview, 50);
+    setTimeout(resizePreview, 200);
+    setTimeout(resizePreview, 500);
+  } else if (active === 'plantel' || active === 'plantel_manual') {
+    document.getElementById('overlay-preview-label').textContent = active === 'plantel_manual' ? 'Vista previa — Plantel Manual' : 'Vista previa — Plantel Auto';
     document.getElementById('preview-plantel').style.display = 'block';
     document.getElementById('team-switch-btn').classList.add('visible');
-    await loadPlantelPreview();
+    await loadPlantelPreview(active);
   } else if (active === 'carousel') {
     document.getElementById('overlay-preview-label').textContent = 'Vista previa — Carrusel';
     document.getElementById('preview-carousel').style.display = 'block';
@@ -892,7 +893,8 @@ async function refreshOverlayPreview(slug) {
 }
 
 // ── PLANTEL PREVIEW ───────────────────────────────────────────
-async function loadPlantelPreview() {
+async function loadPlantelPreview(mode) {
+  const activeMode = mode || state.config.active_overlay || 'plantel';
   const home = state.teams.find(t => t.id === state.config.home_team_id);
   const away = state.teams.find(t => t.id === state.config.away_team_id);
   const team = plantelSide === 'home' ? home : away;
@@ -909,6 +911,34 @@ async function loadPlantelPreview() {
   grid.innerHTML = '<div class="plantel-no-data"><span class="loading"></span></div>';
 
   try {
+    // ── Plantel Manual: leer de Supabase ──
+    if (activeMode === 'plantel_manual') {
+      const teamId = plantelSide === 'home' ? state.config.home_team_id : state.config.away_team_id;
+      if (!teamId) {
+        grid.innerHTML = '<div class="plantel-no-data" style="grid-column:1/-1">— Seleccioná un equipo en Partido —</div>';
+        return;
+      }
+      const players = await sb('players','GET',null,`?team_id=eq.${teamId}&order=number`) || [];
+      if (!players.length) {
+        grid.innerHTML = '<div class="plantel-no-data" style="grid-column:1/-1">— Sin jugadoras cargadas —</div>';
+        return;
+      }
+      grid.innerHTML = players.slice(0,15).map(p => `
+        <div class="plantel-player">
+          <div class="plantel-num" style="color:${color}">${p.number}</div>
+          <div class="plantel-info">
+            <div class="plantel-last">${(p.last_name||'').toUpperCase()}</div>
+            <div class="plantel-first">${p.first_name||''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end">
+            ${p.is_captain ? '<span class="plantel-badge">CAP</span>' : ''}
+            ${p.is_libero  ? '<span class="plantel-badge">LIB</span>' : ''}
+          </div>
+        </div>`).join('');
+      return;
+    }
+
+    // ── Plantel Auto: leer de la API ──
     const matchId = state.config.match_id;
     if (!matchId) throw new Error('no matchId');
     const res  = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
@@ -956,7 +986,8 @@ async function switchPlantelTeam() {
   plantelSide = plantelSide === 'home' ? 'away' : 'home';
   await sb('overlay_config', 'PATCH', { plantel_team: plantelSide, updated_at: new Date().toISOString() }, '?id=eq.1');
   state.config.plantel_team = plantelSide;
-  loadPlantelPreview();
+  const active = state.config.active_overlay || 'plantel';
+  loadPlantelPreview(active);
 }
 
 function hexToRgb(hex) {
