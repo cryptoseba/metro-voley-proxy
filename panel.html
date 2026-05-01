@@ -904,24 +904,45 @@ function renderMatchStatus(data) {
 
 // ── CONFIG ────────────────────────────────────────────────────
 function renderConfig() {
-  document.getElementById('cfg-match-id').value = state.config.match_id || '';
-  document.getElementById('cfg-home-team').value = state.config.home_team_id || '';
-  document.getElementById('cfg-away-team').value = state.config.away_team_id || '';
-  document.getElementById('cfg-data-source').value = state.config.data_source || 'metrovoley';
+  // Campos en tab Conexión
+  const matchIdEl = document.getElementById('inf-manual-id') || document.getElementById('may-manual-id');
+  if (matchIdEl) matchIdEl.value = state.config.match_id || '';
+
+  // Canal activo según data_source
+  const ds = state.config.data_source || 'metrovoley';
+  if (ds === 'dataproject') {
+    setCanal('mayores');
+  } else {
+    setCanal('inferiores');
+  }
+
+  // Equipos en tab Partido
+  const homeEl = document.getElementById('cfg-home-team');
+  const awayEl = document.getElementById('cfg-away-team');
+  if (homeEl) homeEl.value = state.config.home_team_id || '';
+  if (awayEl) awayEl.value = state.config.away_team_id || '';
+
+  // Posición
   const bottom = state.config.scoreboard_bottom || 40;
   const pos    = state.config.scoreboard_position || 'bottom-center';
-  document.getElementById('slider-bottom').value = bottom;
-  document.getElementById('slider-bottom-val').textContent = bottom + 'px';
-  document.getElementById('select-position').value = pos;
+  const sliderEl = document.getElementById('slider-bottom');
+  const sliderVal = document.getElementById('slider-bottom-val');
+  const posEl = document.getElementById('select-position');
+  if (sliderEl) { sliderEl.value = bottom; }
+  if (sliderVal) sliderVal.textContent = bottom + 'px';
+  if (posEl) posEl.value = pos;
+
+  // Mostrar partido seleccionado en tab Partido
+  renderPartidoSeleccionado();
 }
 
 async function saveConfig() {
   const cfg = {
-    match_id:      document.getElementById('cfg-match-id').value.trim(),
-    home_team_id:  document.getElementById('cfg-home-team').value || null,
-    away_team_id:  document.getElementById('cfg-away-team').value || null,
-    data_source:   document.getElementById('cfg-data-source').value,
-    updated_at:    new Date().toISOString()
+    match_id:     state.config.match_id || '',
+    home_team_id: document.getElementById('cfg-home-team')?.value || null,
+    away_team_id: document.getElementById('cfg-away-team')?.value || null,
+    data_source:  state.config.data_source || 'metrovoley',
+    updated_at:   new Date().toISOString()
   };
   await sb('overlay_config','PATCH',cfg,'?id=eq.1');
   state.config = { ...state.config, ...cfg };
