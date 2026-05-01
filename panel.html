@@ -173,6 +173,33 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 
 .loading { display:inline-block; width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.6s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+.canal-btn {
+  background:var(--surface2); border:2px solid var(--border);
+  border-radius:var(--radius); padding:20px 16px; cursor:pointer;
+  text-align:center; transition:all 0.2s;
+}
+.canal-btn:hover { border-color:rgba(255,92,26,0.5); }
+.canal-btn.active { border-color:var(--accent); background:var(--surface); }
+
+.match-card {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:8px; padding:12px 14px; margin-bottom:8px;
+  cursor:pointer; transition:border-color 0.15s; display:flex;
+  align-items:center; gap:12px;
+}
+.match-card:hover { border-color:rgba(255,255,255,0.2); }
+.match-card.selected { border-color:var(--accent); background:var(--surface); }
+.match-card-teams { flex:1; min-width:0; }
+.match-card-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.match-card-meta { font-size:11px; color:var(--text2); margin-top:2px; }
+.match-card-score { font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--accent); min-width:50px; text-align:center; }
+.match-card-status { font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
+.status-live { background:rgba(255,92,26,0.15); color:var(--accent); }
+.status-soon { background:rgba(255,255,255,0.08); color:var(--text2); }
+.btn-aplicar { background:var(--accent); color:white; border:none; border-radius:var(--radius); padding:12px; font-size:13px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; letter-spacing:1px; text-transform:uppercase; }
+.btn-aplicar:hover { opacity:0.85; }
+.btn-aplicar:disabled { opacity:0.35; cursor:default; }
 </style>
 </head>
 <body>
@@ -203,7 +230,8 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
   </div>
 
   <div class="nav">
-    <div class="nav-item active" onclick="switchTab('partido')">Partido</div>
+    <div class="nav-item active" onclick="switchTab('conexion')">Conexión</div>
+    <div class="nav-item" onclick="switchTab('partido')">Partido</div>
     <div class="nav-item" onclick="switchTab('equipos')">Equipos</div>
     <div class="nav-item" onclick="switchTab('posicion')">Posición</div>
     <div class="nav-item" onclick="switchTab('overlays')">Overlays</div>
@@ -212,35 +240,132 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 
   <div class="content">
 
-    <!-- TAB PARTIDO -->
-    <div class="tab-panel active" id="tab-partido">
+    <!-- TAB CONEXIÓN -->
+    <div class="tab-panel active" id="tab-conexion">
+
+      <!-- Selector canal -->
       <div class="card">
-        <div class="card-title">Estado del partido</div>
-        <div id="match-live-status"><div style="color:var(--text3);font-size:13px">Cargando...</div></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Configuración</div>
-        <div class="form-row single">
-          <div class="form-group"><label>Match ID</label><input type="text" id="cfg-match-id" placeholder="158191"></div>
+        <div class="card-title">Canal de transmisión</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="canal-btn active" id="canal-inferiores" onclick="setCanal('inferiores')">
+            <div style="font-size:22px;margin-bottom:6px">🔵</div>
+            <div style="font-size:14px;font-weight:600">Inferiores FMV</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">metrovoley.com.ar</div>
+          </div>
+          <div class="canal-btn" id="canal-mayores" onclick="setCanal('mayores')">
+            <div style="font-size:22px;margin-bottom:6px">🟢</div>
+            <div style="font-size:14px;font-weight:600">Mayores FMV</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">División de Honor</div>
+          </div>
         </div>
-        <div class="form-row single">
+      </div>
+
+      <!-- Filtros Inferiores -->
+      <div class="card" id="filtros-inferiores">
+        <div class="card-title">Buscar partido</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="form-group"><label>Fecha</label><input type="date" id="inf-date"></div>
           <div class="form-group">
-            <label>Fuente de datos</label>
-            <select id="cfg-data-source">
-              <option value="metrovoley">🔵 Inferiores FMV</option>
-              <option value="dataproject">🟢 División de Honor</option>
+            <label>Rama</label>
+            <select id="inf-gender">
+              <option value="">Todas</option>
+              <option value="8">Femenino</option>
+              <option value="7">Masculino</option>
             </select>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+          <div class="form-group">
+            <label>Categoría</label>
+            <select id="inf-cat">
+              <option value="">Todas</option>
+              <option value="14">Sub 21</option>
+              <option value="13">Sub 18</option>
+              <option value="12">Sub 16</option>
+              <option value="11">Sub 15</option>
+              <option value="10">Sub 14</option>
+              <option value="9">Sub 13</option>
+              <option value="8">Sub 12</option>
+              <option value="7">Sub 11</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>División</label>
+            <select id="inf-div">
+              <option value="">Todas</option>
+              <option value="Nivel A">Nivel A</option>
+              <option value="Nivel B">Nivel B</option>
+              <option value="Nivel C">Nivel C</option>
+              <option value="Nivel D">Nivel D</option>
+              <option value="Nivel E">Nivel E</option>
+              <option value="Nivel F">Nivel F</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="buscarInferiores()">Buscar partidos</button>
+        </div>
+        <div id="inf-results" style="margin-top:16px"></div>
+
+        <!-- Match ID manual -->
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="card-title">O ingresá el Match ID manualmente</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div class="form-group" style="flex:1;margin:0">
+              <input type="text" id="inf-manual-id" placeholder="ej: 240704">
+            </div>
+            <button class="btn" onclick="aplicarManual('metrovoley')">Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros Mayores -->
+      <div class="card" id="filtros-mayores" style="display:none">
+        <div class="card-title">Partidos disponibles</div>
+        <div class="btn-row" style="margin-bottom:16px">
+          <button class="btn accent" onclick="buscarMayores()">Ver partidos de hoy</button>
+        </div>
+        <div id="may-results"></div>
+
+        <!-- Match ID manual -->
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="card-title">O ingresá el Match ID manualmente</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <div class="form-group" style="flex:1;margin:0">
+              <input type="text" id="may-manual-id" placeholder="ej: 6239">
+            </div>
+            <button class="btn" onclick="aplicarManual('dataproject')">Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB PARTIDO -->
+    <div class="tab-panel" id="tab-partido">
+
+      <!-- Partido seleccionado (readonly) -->
+      <div id="partido-seleccionado-card" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;opacity:0.7">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Partido seleccionado en Conexión</div>
+        <div id="partido-seleccionado-info">
+          <div style="color:var(--text3);font-size:13px">Ningún partido seleccionado — ir a Conexión</div>
+        </div>
+      </div>
+
+      <!-- Presentación -->
+      <div class="card">
+        <div class="card-title">Presentación en el overlay</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Elegí los equipos de tu base con los nombres y colores a mostrar.</div>
         <div class="form-row">
           <div class="form-group"><label>Equipo Local</label><select id="cfg-home-team"><option value="">Seleccionar...</option></select></div>
           <div class="form-group"><label>Equipo Visitante</label><select id="cfg-away-team"><option value="">Seleccionar...</option></select></div>
         </div>
         <div class="btn-row">
           <button class="btn accent" onclick="saveConfig()">Guardar y aplicar</button>
-          <button class="btn" onclick="checkConnection()">Verificar conexión</button>
         </div>
       </div>
+
+      <!-- URL del overlay -->
       <div class="card">
         <div class="card-title">URL del overlay</div>
         <div style="background:var(--surface2);border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px">
@@ -498,9 +623,9 @@ if (sessionStorage.getItem('mv_logged')) {
 
 // ── INIT ──────────────────────────────────────────────────────
 async function initApp() {
+  document.getElementById('inf-date').value = new Date().toISOString().split('T')[0];
   await loadAll();
   checkConnection();
-  setInterval(checkConnection, 10000);
   document.getElementById('overlay-url').textContent = OVERLAY_URL;
   initPreview();
 }
@@ -536,30 +661,167 @@ function switchTab(tab) {
   event.target.classList.add('active');
   if (tab === 'posicion') updatePreview();
   if (tab === 'overlays') refreshOverlayPreview();
+  if (tab === 'partido') renderPartidoSeleccionado();
 }
 
-// ── CONEXIÓN ──────────────────────────────────────────────────
+// ── CONEXIÓN TAB ──────────────────────────────────────────────
+let canalActual = 'inferiores';
+let partidoSeleccionado = null;
+
+function setCanal(canal) {
+  canalActual = canal;
+  document.getElementById('canal-inferiores').classList.toggle('active', canal === 'inferiores');
+  document.getElementById('canal-mayores').classList.toggle('active', canal === 'mayores');
+  document.getElementById('filtros-inferiores').style.display = canal === 'inferiores' ? 'block' : 'none';
+  document.getElementById('filtros-mayores').style.display   = canal === 'mayores'   ? 'block' : 'none';
+  document.getElementById('inf-results').innerHTML = '';
+  document.getElementById('may-results').innerHTML = '';
+}
+
+async function buscarInferiores() {
+  const date   = document.getElementById('inf-date').value;
+  const gender = document.getElementById('inf-gender').value;
+  const cat    = document.getElementById('inf-cat').value;
+  const div    = document.getElementById('inf-div').value;
+  const el     = document.getElementById('inf-results');
+  el.innerHTML = '<div style="color:var(--text3);font-size:13px"><span class="loading"></span> Buscando...</div>';
+
+  try {
+    let url = `https://metrovoley.com.ar/matches?status=upcoming`;
+    if (date) url += `&date=${date}`;
+    const res  = await fetch(`${PROXY_URL}/api/metro/matches?date=${date}&genderId=${gender}&categoryId=${cat}&division=${encodeURIComponent(div)}`);
+    const data = await res.json();
+    renderMatchList(el, data.matches || [], 'metrovoley');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
+  }
+}
+
+async function buscarMayores() {
+  const el = document.getElementById('may-results');
+  el.innerHTML = '<div style="color:var(--text3);font-size:13px"><span class="loading"></span> Buscando...</div>';
+  try {
+    const res  = await fetch(`${PROXY_URL}/api/dataproject/matches`);
+    const data = await res.json();
+    renderMatchList(el, data.matches || [], 'dataproject');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
+  }
+}
+
+function renderMatchList(el, matches, source) {
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:12px 0">No se encontraron partidos</div>';
+    return;
+  }
+  el.innerHTML = matches.map(m => {
+    const isLive   = m.statusId === 3 || m.status === 3;
+    const homeName = m.homeTeam?.name || m.home || `Partido ${m.id}`;
+    const awayName = m.awayTeam?.name || m.away || '';
+    const cat      = [m.categoryName, m.divisionName].filter(Boolean).join(' · ');
+    const time     = m.time ? m.time.slice(0,5) : '';
+    const score    = isLive ? `${m.homeTeamSets || m.WonSetHome || 0}-${m.awayTeamSets || m.WonSetGuest || 0}` : null;
+    return `<div class="match-card" id="mc-${m.id}" onclick="selectMatchCard(${JSON.stringify(m).replace(/"/g,'&quot;')}, '${source}')">
+      <div class="match-card-teams">
+        <div class="match-card-name">${homeName} vs ${awayName}</div>
+        <div class="match-card-meta">${cat}${time ? ' · ' + time : ''}</div>
+      </div>
+      ${isLive ? '<span class="match-card-status status-live">EN VIVO</span>' : time ? `<span class="match-card-status status-soon">${time}</span>` : ''}
+      ${score ? `<div class="match-card-score">${score}</div>` : ''}
+    </div>`;
+  }).join('') + `<button class="btn-aplicar" id="btn-aplicar-lista" disabled onclick="aplicarPartidoSeleccionado()">Aplicar partido seleccionado</button>`;
+}
+
+function selectMatchCard(m, source) {
+  document.querySelectorAll('.match-card').forEach(c => c.classList.remove('selected'));
+  const id = m.id || m.ChampionshipMatchID;
+  document.getElementById('mc-' + id)?.classList.add('selected');
+  partidoSeleccionado = { ...m, _source: source, _id: id };
+  const btn = document.getElementById('btn-aplicar-lista');
+  if (btn) btn.disabled = false;
+}
+
+async function aplicarPartidoSeleccionado() {
+  if (!partidoSeleccionado) return;
+  await aplicarPartido(partidoSeleccionado._id, partidoSeleccionado._source, partidoSeleccionado);
+}
+
+async function aplicarManual(source) {
+  const id = source === 'metrovoley'
+    ? document.getElementById('inf-manual-id').value.trim()
+    : document.getElementById('may-manual-id').value.trim();
+  if (!id) { showToast('Ingresá un Match ID', 'error'); return; }
+  await aplicarPartido(id, source, null);
+}
+
+async function aplicarPartido(matchId, source, matchData) {
+  const dataSource = source === 'dataproject' ? 'dataproject' : 'metrovoley';
+  await sb('overlay_config','PATCH',{
+    match_id: String(matchId),
+    data_source: dataSource,
+    updated_at: new Date().toISOString()
+  },'?id=eq.1');
+  state.config.match_id   = String(matchId);
+  state.config.data_source = dataSource;
+
+  // Guardar info del partido para mostrar en tab Partido
+  if (matchData) {
+    state.partidoInfo = matchData;
+    state.partidoInfo._source = dataSource;
+  } else {
+    state.partidoInfo = { _id: matchId, _source: dataSource };
+  }
+
+  showToast('Partido aplicado ✓', 'success');
+  renderPartidoSeleccionado();
+  checkConnection();
+}
+
+function renderPartidoSeleccionado() {
+  const el = document.getElementById('partido-seleccionado-info');
+  const info = state.partidoInfo || (state.config.match_id ? { _id: state.config.match_id, _source: state.config.data_source } : null);
+  if (!info) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px">Ningún partido seleccionado — ir a Conexión</div>';
+    return;
+  }
+  const homeName = info.homeTeam?.name || info.HomeEmpty || info.home || '—';
+  const awayName = info.awayTeam?.name || info.GuestEmpty || info.away || '—';
+  const cat      = [info.categoryName, info.divisionName].filter(Boolean).join(' · ');
+  const canal    = info._source === 'dataproject' ? 'Mayores FMV' : 'Inferiores FMV';
+  const time     = info.time ? info.time.slice(0,5) : '';
+  const score    = (info.homeTeamSets !== undefined) ? `${info.homeTeamSets}-${info.awayTeamSets}` :
+                   (info.WonSetHome !== undefined) ? `${info.WonSetHome}-${info.WonSetGuest}` : null;
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px">
+      ${score ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--text3)">${score}</div>` : ''}
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--text2)">${homeName} vs ${awayName}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">${[canal, cat, time, 'ID: '+info._id].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>`
+}
+
 async function checkConnection() {
   const dot = document.getElementById('conn-dot');
   const txt = document.getElementById('conn-text');
   const matchId = document.getElementById('cfg-match-id')?.value || state.config.match_id;
   const dataSource = document.getElementById('cfg-data-source')?.value || state.config.data_source || 'metrovoley';
+  const apiInfo = document.getElementById('match-api-info');
+  const apiDetail = document.getElementById('match-api-detail');
 
-  // Limpiar estado anterior mientras verifica
   dot.className = 'status-dot';
   txt.textContent = 'Verificando...';
-  document.getElementById('match-live-status').innerHTML = '<div style="color:var(--text3);font-size:13px">Verificando...</div>';
+  if (apiInfo) apiInfo.style.display = 'none';
 
   if (!matchId) {
     dot.className = 'status-dot error';
     txt.textContent = 'Sin Match ID';
-    document.getElementById('match-live-status').innerHTML = '<div style="color:var(--text3);font-size:13px">Ingresá un Match ID</div>';
     return;
   }
 
   try {
     if (dataSource === 'dataproject') {
-      // Para DataProject verificamos via negotiate + invoke
       const neg = await fetch(`${PROXY_URL}/api/signalr/negotiate?matchId=${matchId}`);
       const negData = await neg.json();
       if (negData.error) throw new Error(negData.error);
@@ -573,33 +835,55 @@ async function checkConnection() {
       if (invokeData.error || !invokeData.result) throw new Error(invokeData.error || 'Sin datos');
 
       const score = invokeData.result;
-      dot.className = 'status-dot online';
       const status = score.Status === 2 ? 'Terminado' : score.Status === 1 ? 'En juego' : 'Sin empezar';
+      dot.className = 'status-dot online';
       txt.textContent = status;
-      const home = state.teams.find(t => t.id === state.config.home_team_id);
-      const away = state.teams.find(t => t.id === state.config.away_team_id);
-      document.getElementById('match-live-status').innerHTML = `<div class="match-status-card">
-        <div class="match-score">${score.WonSetHome}-${score.WonSetGuest}</div>
-        <div class="match-info">
-          <div class="match-teams">${home?.name||score.HomeEmpty||'LOCAL'} vs ${away?.name||score.GuestEmpty||'VISITANTE'}</div>
-          <div class="match-detail">Match ID: ${matchId} · ${status} · DataProject</div>
-        </div>
-      </div>`;
+
+      if (apiInfo && apiDetail) {
+        apiDetail.innerHTML = `
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent)">${score.WonSetHome}-${score.WonSetGuest}</div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px">${score.HomeEmpty || 'LOCAL'} <span style="color:var(--text3)">vs</span> ${score.GuestEmpty || 'VISITANTE'}</div>
+              <div style="font-size:12px;color:var(--text2)">Match ID: ${matchId} · ${status} · División de Honor</div>
+              ${score.MatchDateTime ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${new Date(score.MatchDateTime).toLocaleDateString('es-AR', {weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+            </div>
+          </div>`;
+        apiInfo.style.display = 'block';
+      }
     } else {
       const res = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if (!data.match) throw new Error('Sin datos');
       state.matchData = data;
-      dot.className = 'status-dot online';
       const s = data.match?.statusId;
-      txt.textContent = s === 2 ? 'Partido terminado' : s === 3 ? 'En vivo' : 'Conectado';
-      renderMatchStatus(data);
+      const status = s === 2 ? 'Terminado' : s === 3 ? 'En juego' : 'Sin empezar';
+      dot.className = 'status-dot online';
+      txt.textContent = status;
+
+      if (apiInfo && apiDetail) {
+        // MetroVoley no devuelve nombres de equipos en este endpoint
+        // pero sí el score y los sets
+        const m = data.match;
+        apiDetail.innerHTML = `
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--accent)">${m.homeTeamSets}-${m.awayTeamSets}</div>
+            <div style="flex:1">
+              <div style="font-size:14px;font-weight:600;margin-bottom:4px">Local vs Visitante</div>
+              <div style="font-size:12px;color:var(--text2)">Match ID: ${m.id} · Set ${m.currentSet} · ${status} · Inferiores FMV</div>
+            </div>
+          </div>`;
+        apiInfo.style.display = 'block';
+      }
     }
   } catch(e) {
     dot.className = 'status-dot error';
     txt.textContent = 'Sin conexión';
-    document.getElementById('match-live-status').innerHTML = `<div style="color:var(--error);font-size:13px">No se pudo conectar — ${e.message}</div>`;
+    if (apiInfo && apiDetail) {
+      apiDetail.innerHTML = `<div style="color:var(--error);font-size:13px">No se pudo conectar — ${e.message}</div>`;
+      apiInfo.style.display = 'block';
+    }
   }
 }
 
