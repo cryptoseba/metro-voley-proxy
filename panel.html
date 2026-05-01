@@ -807,11 +807,11 @@ function updatePreview() {
 // ── OVERLAYS ──────────────────────────────────────────────────
 const OVERLAY_ICONS = { voley:'🏐', carousel:'📢', plantel:'👥', plantel_manual:'📋', none:'🚫' };
 const OVERLAY_SLUGS_DEFAULT = [
-  { slug:'voley',          name:'Marcador',          description:'Marcador en vivo con datos de la API' },
-  { slug:'plantel',        name:'Plantel Div. Honor', description:'Jugadoras desde DataProject (División de Honor)' },
-  { slug:'plantel_manual', name:'Plantel Inferiores', description:'Jugadoras cargadas manualmente (FMV Inferiores)' },
-  { slug:'carousel',       name:'Publicidad',         description:'Imágenes rotativas de sponsors' },
-  { slug:'none',           name:'Ninguno',            description:'Apaga todos los overlays' }
+  { slug:'voley',          name:'Marcador',       description:'Marcador en vivo con datos de la API' },
+  { slug:'plantel',        name:'Plantel Auto',   description:'Jugadoras automáticas desde la fuente de datos' },
+  { slug:'plantel_manual', name:'Plantel Manual', description:'Jugadoras cargadas en la sección Equipos' },
+  { slug:'carousel',       name:'Publicidad',     description:'Imágenes rotativas de sponsors' },
+  { slug:'none',           name:'Ninguno',        description:'Apaga todos los overlays' }
 ];
 
 function renderOverlays() {
