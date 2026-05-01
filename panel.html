@@ -542,8 +542,8 @@ function switchTab(tab) {
 async function checkConnection() {
   const dot = document.getElementById('conn-dot');
   const txt = document.getElementById('conn-text');
-  const matchId = state.config.match_id;
-  const dataSource = state.config.data_source || 'metrovoley';
+  const matchId = document.getElementById('cfg-match-id')?.value || state.config.match_id;
+  const dataSource = document.getElementById('cfg-data-source')?.value || state.config.data_source || 'metrovoley';
 
   // Limpiar estado anterior mientras verifica
   dot.className = 'status-dot';
