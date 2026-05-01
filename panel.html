@@ -191,7 +191,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .match-card:hover { border-color:rgba(255,255,255,0.2); }
 .match-card.selected { border-color:var(--accent); background:var(--surface); }
 .match-card-teams { flex:1; min-width:0; }
-.match-card-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.match-card-name { font-size:14px; font-weight:600; white-space:normal; overflow-wrap:break-word; line-height:1.3; }
 .match-card-meta { font-size:11px; color:var(--text2); margin-top:2px; }
 .match-card-score { font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--accent); min-width:50px; text-align:center; }
 .match-card-status { font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
@@ -661,7 +661,7 @@ function switchTab(tab) {
   event.target.classList.add('active');
   if (tab === 'posicion') updatePreview();
   if (tab === 'overlays') refreshOverlayPreview();
-  if (tab === 'partido') renderPartidoSeleccionado();
+  if (tab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); }
 }
 
 // ── CONEXIÓN TAB ──────────────────────────────────────────────
@@ -715,24 +715,44 @@ function renderMatchList(el, matches, source) {
     return;
   }
   el.innerHTML = matches.map(m => {
-    const isLive   = m.statusId === 3 || m.status === 3;
-    const homeName = m.homeTeam?.name || m.home || `Partido ${m.id}`;
-    const awayName = m.awayTeam?.name || m.away || '';
-    const time     = m.time ? m.time.slice(0,5) : '';
-    const score    = isLive ? `${m.homeTeamSets ?? m.WonSetHome ?? 0}-${m.awayTeamSets ?? m.WonSetGuest ?? 0}` : null;
+    const isDP = source === 'dataproject';
 
-    // Meta info: categoría · división · sede
-    const metaParts = [m.categoryName, m.divisionName, m.venue || m.courtName].filter(Boolean);
+    // Nombres
+    const homeName = isDP ? (m.HomeEmpty || '—') : (m.homeTeam?.name || m.home || `Partido ${m.id}`);
+    const awayName = isDP ? (m.GuestEmpty || '—') : (m.awayTeam?.name || m.away || '');
+
+    // Estado en vivo
+    const isLive = isDP ? (m.Status === 1) : (m.statusId === 3 || m.status === 3);
+
+    // Score (sets ganados)
+    const scoreHome = isDP ? (m.WonSetHome ?? 0) : (m.homeTeamSets ?? 0);
+    const scoreAway = isDP ? (m.WonSetGuest ?? 0) : (m.awayTeamSets ?? 0);
+    const score = isLive ? `${scoreHome}-${scoreAway}` : null;
+
+    // Hora
+    let time = '';
+    if (isDP && m.MatchDateTime) {
+      time = m.MatchDateTime.slice(11, 16); // "19:00"
+    } else if (m.time) {
+      time = m.time.slice(0, 5);
+    }
+
+    // Fecha formateada
+    const rawDate = isDP ? m.MatchDateTime : m.scheduledAt;
+    const dateStr = rawDate ? new Date(rawDate).toLocaleDateString('es-AR', {weekday:'short', day:'numeric', month:'short'}) : '';
+
+    // Meta: categoría · división · sede
+    const metaParts = isDP
+      ? ['División de Honor', m.Status === 2 ? 'Terminado' : m.Status === 1 ? 'En juego' : null].filter(Boolean)
+      : [m.categoryName, m.divisionName, m.venue || m.courtName].filter(Boolean);
     const meta = metaParts.join(' · ');
 
-    // Date formatted
-    const dateStr = m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('es-AR', {weekday:'short', day:'numeric', month:'short'}) : '';
-
+    const id   = m.ChampionshipMatchID || m.id;
     const mJson = JSON.stringify(m).replace(/"/g,'&quot;');
-    return `<div class="match-card" id="mc-${m.id}" onclick="selectMatchCard(${mJson}, '${source}')">
+    return `<div class="match-card" id="mc-${id}" onclick="selectMatchCard(${mJson}, '${source}')">
       <div class="match-card-teams">
         <div class="match-card-name">${homeName} vs ${awayName}</div>
-        <div class="match-card-meta">${meta}</div>
+        ${meta ? `<div class="match-card-meta">${meta}</div>` : ''}
         ${dateStr ? `<div class="match-card-meta" style="margin-top:2px;opacity:0.7">${dateStr}${time ? ' · ' + time : ''}</div>` : ''}
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
@@ -804,18 +824,71 @@ function renderPartidoSeleccionado() {
   const awayName = info.awayTeam?.name || info.GuestEmpty || info.away || '—';
   const cat      = [info.categoryName, info.divisionName].filter(Boolean).join(' · ');
   const canal    = info._source === 'dataproject' ? 'Mayores FMV' : 'Inferiores FMV';
-  const time     = info.time ? info.time.slice(0,5) : '';
+  // Hora: MetroVoley usa info.time, DataProject usa info.MatchDateTime
+  const rawTime  = info.time ? info.time.slice(0,5) : (info.MatchDateTime ? info.MatchDateTime.slice(11,16) : '');
   const score    = (info.homeTeamSets !== undefined) ? `${info.homeTeamSets}-${info.awayTeamSets}` :
                    (info.WonSetHome !== undefined) ? `${info.WonSetHome}-${info.WonSetGuest}` : null;
 
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px">
-      ${score ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--text3)">${score}</div>` : ''}
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:600;color:var(--text2)">${homeName} vs ${awayName}</div>
-        <div style="font-size:12px;color:var(--text3);margin-top:3px">${[canal, cat, time, 'ID: '+info._id].filter(Boolean).join(' · ')}</div>
+    <div style="display:flex;align-items:flex-start;gap:14px">
+      ${score ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--text3);flex-shrink:0">${score}</div>` : ''}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text2);line-height:1.35;overflow-wrap:break-word">${homeName} vs ${awayName}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">${[canal, cat, rawTime, 'ID: '+info._id].filter(Boolean).join(' · ')}</div>
       </div>
     </div>`
+}
+
+async function refreshPartidoScore() {
+  const matchId    = state.config.match_id;
+  const dataSource = state.config.data_source || 'metrovoley';
+  const el         = document.getElementById('partido-seleccionado-info');
+  const scoreEl    = document.getElementById('partido-live-score');
+  if (!matchId || !el) return;
+
+  // Insertar o reusar el badge de score en vivo
+  if (!scoreEl) {
+    const badge = document.createElement('div');
+    badge.id = 'partido-live-score';
+    badge.style.cssText = 'display:inline-flex;align-items:center;gap:8px;margin-top:8px;padding:5px 10px;background:rgba(255,255,255,0.06);border-radius:6px;';
+    badge.innerHTML = '<span style="font-size:11px;color:var(--text3)">Cargando score…</span>';
+    el.appendChild(badge);
+  }
+
+  const update = (html) => {
+    const s = document.getElementById('partido-live-score');
+    if (s) s.innerHTML = html;
+  };
+
+  try {
+    if (dataSource === 'dataproject') {
+      const neg = await fetch(`${PROXY_URL}/api/signalr/negotiate?matchId=${matchId}`);
+      const negData = await neg.json();
+      if (negData.error) throw new Error(negData.error);
+      const inv = await fetch(`${PROXY_URL}/api/signalr/invoke`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ token: negData.token, messageId: negData.messageId, method: 'getLiveScoreData_From_DV', args: [matchId, 'fmv'], invokeId: 1 })
+      });
+      const invData = await inv.json();
+      const s = invData.result;
+      if (!s) throw new Error('Sin datos');
+      const status = s.Status === 2 ? 'Terminado' : s.Status === 1 ? 'En juego' : 'Sin empezar';
+      const statusColor = s.Status === 1 ? 'var(--accent)' : 'var(--text3)';
+      update(`<span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text2)">${s.WonSetHome}-${s.WonSetGuest}</span><span style="font-size:11px;color:${statusColor}">${status}</span>`);
+    } else {
+      const res = await fetch(`${PROXY_URL}/api/matches/${matchId}/updates`);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const m = data.match;
+      if (!m) throw new Error('Sin datos');
+      const status = m.statusId === 2 ? 'Terminado' : m.statusId === 3 ? 'En juego' : 'Sin empezar';
+      const statusColor = m.statusId === 3 ? 'var(--accent)' : 'var(--text3)';
+      update(`<span style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text2)">${m.homeTeamSets}-${m.awayTeamSets}</span><span style="font-size:11px;color:${statusColor}">Set ${m.currentSet} · ${status}</span>`);
+    }
+  } catch(e) {
+    update(`<span style="font-size:11px;color:var(--text3)">Score no disponible</span>`);
+  }
 }
 
 async function checkConnection() {
