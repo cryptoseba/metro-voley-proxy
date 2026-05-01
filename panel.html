@@ -718,16 +718,27 @@ function renderMatchList(el, matches, source) {
     const isLive   = m.statusId === 3 || m.status === 3;
     const homeName = m.homeTeam?.name || m.home || `Partido ${m.id}`;
     const awayName = m.awayTeam?.name || m.away || '';
-    const cat      = [m.categoryName, m.divisionName].filter(Boolean).join(' · ');
     const time     = m.time ? m.time.slice(0,5) : '';
-    const score    = isLive ? `${m.homeTeamSets || m.WonSetHome || 0}-${m.awayTeamSets || m.WonSetGuest || 0}` : null;
-    return `<div class="match-card" id="mc-${m.id}" onclick="selectMatchCard(${JSON.stringify(m).replace(/"/g,'&quot;')}, '${source}')">
+    const score    = isLive ? `${m.homeTeamSets ?? m.WonSetHome ?? 0}-${m.awayTeamSets ?? m.WonSetGuest ?? 0}` : null;
+
+    // Meta info: categoría · división · sede
+    const metaParts = [m.categoryName, m.divisionName, m.venue || m.courtName].filter(Boolean);
+    const meta = metaParts.join(' · ');
+
+    // Date formatted
+    const dateStr = m.scheduledAt ? new Date(m.scheduledAt).toLocaleDateString('es-AR', {weekday:'short', day:'numeric', month:'short'}) : '';
+
+    const mJson = JSON.stringify(m).replace(/"/g,'&quot;');
+    return `<div class="match-card" id="mc-${m.id}" onclick="selectMatchCard(${mJson}, '${source}')">
       <div class="match-card-teams">
         <div class="match-card-name">${homeName} vs ${awayName}</div>
-        <div class="match-card-meta">${cat}${time ? ' · ' + time : ''}</div>
+        <div class="match-card-meta">${meta}</div>
+        ${dateStr ? `<div class="match-card-meta" style="margin-top:2px;opacity:0.7">${dateStr}${time ? ' · ' + time : ''}</div>` : ''}
       </div>
-      ${isLive ? '<span class="match-card-status status-live">EN VIVO</span>' : time ? `<span class="match-card-status status-soon">${time}</span>` : ''}
-      ${score ? `<div class="match-card-score">${score}</div>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        ${isLive ? '<span class="match-card-status status-live">EN VIVO</span>' : time ? `<span class="match-card-status status-soon">${time}</span>` : ''}
+        ${score ? `<div class="match-card-score">${score}</div>` : ''}
+      </div>
     </div>`;
   }).join('') + `<button class="btn-aplicar" id="btn-aplicar-lista" disabled onclick="aplicarPartidoSeleccionado()">Aplicar partido seleccionado</button>`;
 }
@@ -775,6 +786,11 @@ async function aplicarPartido(matchId, source, matchData) {
   showToast('Partido aplicado ✓', 'success');
   renderPartidoSeleccionado();
   checkConnection();
+  // Pasar al tab Partido
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-partido').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if(n.textContent.trim()==='Partido') n.classList.add('active'); });
 }
 
 function renderPartidoSeleccionado() {
