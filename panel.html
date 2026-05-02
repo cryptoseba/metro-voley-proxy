@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v1.9</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.0</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -293,12 +293,20 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
             <label>División</label>
             <select id="inf-div">
               <option value="">Todas</option>
-              <option value="Nivel A">Nivel A</option>
-              <option value="Nivel B">Nivel B</option>
-              <option value="Nivel C">Nivel C</option>
-              <option value="Nivel D">Nivel D</option>
-              <option value="Nivel E">Nivel E</option>
-              <option value="Nivel F">Nivel F</option>
+              <option value="3">Nivel A</option>
+              <option value="4">Nivel B</option>
+              <option value="5">Nivel C</option>
+              <option value="14">Nivel D</option>
+              <option value="15">Nivel E</option>
+              <option value="31">Nivel F</option>
+              <option value="6">División de Honor</option>
+              <option value="7">Primera</option>
+              <option value="8">Segunda</option>
+              <option value="9">Tercera</option>
+              <option value="10">Cuarta</option>
+              <option value="11">Quinta</option>
+              <option value="12">Sexta</option>
+              <option value="13">Séptima</option>
             </select>
           </div>
         </div>
@@ -715,7 +723,7 @@ async function buscarInferiores() {
   try {
     let url = `https://metrovoley.com.ar/matches?status=upcoming`;
     if (date) url += `&date=${date}`;
-    const res  = await fetch(`${PROXY_URL}/api/metro/matches?date=${date}&genderId=${gender}&categoryId=${cat}&division=${encodeURIComponent(div)}`);
+    const res  = await fetch(`${PROXY_URL}/api/metro/matches?date=${date}&genderId=${gender}&categoryId=${cat}&division=${div}`);
     const data = await res.json();
     renderMatchList(el, data.matches || [], 'metrovoley');
     // Restaurar selección visual si hay un partido aplicado
