@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.1</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.2</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1310,7 +1310,7 @@ function setPreviewState(s, btn) {
 
 function updatePreview() {
   const iframe = document.getElementById('preview-iframe');
-  if (iframe.src !== OVERLAY_URL) iframe.src = OVERLAY_URL;
+  iframe.srcdoc = buildPreviewHtml(state.previewState);
   setTimeout(resizePreview, 100);
 }
 
