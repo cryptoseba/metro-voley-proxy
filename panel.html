@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.8</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.9</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1271,10 +1271,15 @@ function syncColorText(colorId, textId) { const v = document.getElementById(text
 // ── POSICIÓN / PREVIEW MARCADOR ───────────────────────────────
 function initPreview() {
   const c = document.getElementById('preview-container');
-  if (!c) return;
-  // ResizeObserver dispara cuando el contenedor realmente tiene dimensiones
-  const ro = new ResizeObserver(() => resizePreview());
-  ro.observe(c);
+  if (c) {
+    const ro = new ResizeObserver(() => resizePreview());
+    ro.observe(c);
+  }
+  const cv = document.getElementById('preview-container-voley');
+  if (cv) {
+    const rov = new ResizeObserver(() => resizePreview());
+    rov.observe(cv);
+  }
   window.addEventListener('resize', resizePreview);
 }
 
