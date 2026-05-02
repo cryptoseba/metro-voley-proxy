@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.0</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.1</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1310,7 +1310,7 @@ function setPreviewState(s, btn) {
 
 function updatePreview() {
   const iframe = document.getElementById('preview-iframe');
-  iframe.srcdoc = buildPreviewHtml(state.previewState);
+  if (iframe.src !== OVERLAY_URL) iframe.src = OVERLAY_URL;
   setTimeout(resizePreview, 100);
 }
 
@@ -1385,7 +1385,7 @@ async function refreshOverlayPreview(slug) {
     document.getElementById('overlay-preview-label').textContent = 'Vista previa — Marcador';
     document.getElementById('preview-voley').style.display = 'block';
     const iframe = document.getElementById('preview-iframe-voley');
-    iframe.srcdoc = buildPreviewHtml('live');
+    if (iframe.src !== OVERLAY_URL) iframe.src = OVERLAY_URL;
     setTimeout(resizePreview, 50);
     setTimeout(resizePreview, 200);
     setTimeout(resizePreview, 500);
