@@ -3,7 +3,7 @@ import urllib.request
 import urllib.parse
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Mapa de divisiones disponibles
 DIVISIONS = {
@@ -57,10 +57,12 @@ def parse_match_block(block, division_name):
             except:
                 pass
 
-    # Filtrar partidos anteriores a hoy
+    # Filtrar: solo partidos de hoy hasta hoy + 20 días
     if scheduled_at:
         try:
-            if datetime.fromisoformat(scheduled_at).date() < datetime.now().date():
+            match_date = datetime.fromisoformat(scheduled_at).date()
+            today = datetime.now().date()
+            if match_date < today or match_date > today + timedelta(days=20):
                 return None
         except:
             pass
