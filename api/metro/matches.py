@@ -22,6 +22,7 @@ class handler(BaseHTTPRequestHandler):
             params = f'date={date}'
             if gender_id:   params += f'&genderId={gender_id}'
             if category_id: params += f'&categoryId={category_id}'
+            if division:    params += f'&division={division}'
 
             url = f'https://metrovoley.com.ar/matches?{params}'
             req = urllib.request.Request(url, headers={
@@ -47,9 +48,6 @@ class handler(BaseHTTPRequestHandler):
             items   = matches if isinstance(matches, list) else matches.get('data', [])
 
             items = [m for m in items if m.get('categoryName','') not in ['Superiores']]
-
-            if division:
-                items = [m for m in items if m.get('divisionName','') == division]
 
             if category_id:
                 filters = props.get('filters', {})
