@@ -28,81 +28,87 @@ def fetch_fixture(competition_id):
     html = urllib.request.urlopen(req, timeout=15).read().decode('utf-8', errors='ignore')
     return html
 
+def parse_match_block(block, division_name):
+    """Parsea un bloque de partido individual y retorna un dict o None."""
+    # ChampionshipMatchID desde el onclick
+    mid_m = re.search(r'MatchStatistics\.aspx\?mID=(\d+)', block)
+    if not mid_m:
+        return None
+    match_id = int(mid_m.group(1))
+
+    # Scores
+    home_sets = int(m.group(1)) if (m := re.search(r'HF_WonSetHome[^>]*value="(\d+)"', block)) else 0
+    away_sets = int(m.group(1)) if (m := re.search(r'HF_WonSetGuest[^>]*value="(\d+)"', block)) else 0
+
+    # Fecha y hora
+    datetime_m = re.search(r'HF_MatchDatetime[^>]*value="([^"]+)"', block)
+    raw_dt = datetime_m.group(1).strip() if datetime_m else ''
+    scheduled_at = None
+    time_str = None
+    if raw_dt:
+        dt_parts = raw_dt.replace(' ', '').split('-')
+        if len(dt_parts) >= 2:
+            date_part = dt_parts[0]
+            time_part = dt_parts[1][:5]
+            time_str = time_part
+            try:
+                d, mo, y = date_part.split('/')
+                scheduled_at = f"{y}-{mo.zfill(2)}-{d.zfill(2)}T{time_part}:00"
+            except:
+                pass
+
+    # Filtrar partidos anteriores a hoy
+    if scheduled_at:
+        try:
+            if datetime.fromisoformat(scheduled_at).date() < datetime.now().date():
+                return None
+        except:
+            pass
+
+    # Status
+    status_id = 1
+    if home_sets > 0 or away_sets > 0:
+        status_id = 2
+    elif scheduled_at:
+        try:
+            if datetime.fromisoformat(scheduled_at) < datetime.now():
+                status_id = 2
+        except:
+            pass
+
+    # Nombres — cada partido tiene exactamente 2 TeamName
+    team_names = re.findall(r'TeamName[^>]*>([^<]{3,60})<', block)
+    home = team_names[0].strip() if len(team_names) > 0 else '—'
+    away = team_names[1].strip() if len(team_names) > 1 else '—'
+
+    return {
+        'id': match_id,
+        'home': home,
+        'away': away,
+        'time': time_str,
+        'scheduledAt': scheduled_at,
+        'statusId': status_id,
+        'homeTeamSets': home_sets,
+        'awayTeamSets': away_sets,
+        'categoryName': division_name,
+    }
+
 def parse_fixture(html, division_name):
     matches = []
+    seen_ids = set()
 
-    # Dividir por bloques usando HF_LegID (cada bloque = una jornada/partido)
-    blocks = re.split(r'(?=<input[^>]*name="[^"]*HF_LegID[^"]*")', html)
+    # Dividir por bloques de jornada (HF_LegID)
+    leg_blocks = re.split(r'(?=<input[^>]*name="[^"]*HF_LegID[^"]*")', html)
 
-    for block in blocks[1:]:  # skip first empty
-        # ChampionshipMatchID — extraer mID del onclick
-        # Patrón: MatchStatistics.aspx?mID=6237&ID=56&...
-        mid_m = re.search(r'MatchStatistics\.aspx\?mID=(\d+)', block)
-        if not mid_m:
-            continue
-        match_id = int(mid_m.group(1))
+    for leg_block in leg_blocks[1:]:
+        # Dentro de cada jornada, dividir por partido individual (HF_MatchDatetime)
+        match_blocks = re.split(r'(?=<input[^>]*name="[^"]*HF_MatchDatetime[^"]*")', leg_block)
 
-        # Scores
-        home_sets_m = re.search(r'HF_WonSetHome[^>]*value="(\d+)"', block)
-        away_sets_m = re.search(r'HF_WonSetGuest[^>]*value="(\d+)"', block)
-        home_sets = int(home_sets_m.group(1)) if home_sets_m else 0
-        away_sets = int(away_sets_m.group(1)) if away_sets_m else 0
-
-        # Fecha y hora: "24/4/2026 - 19:00"
-        datetime_m = re.search(r'HF_MatchDatetime[^>]*value="([^"]+)"', block)
-        raw_dt = datetime_m.group(1).strip() if datetime_m else ''
-        scheduled_at = None
-        time_str = None
-        if raw_dt:
-            # Parsear "24/4/2026 - 19:00" o "24/4/2026 - 19:00:00"
-            dt_parts = raw_dt.replace(' ', '').split('-')
-            if len(dt_parts) >= 2:
-                date_part = dt_parts[0]  # "24/4/2026"
-                time_part = dt_parts[1][:5]  # "19:00"
-                time_str = time_part
-                try:
-                    d, m, y = date_part.split('/')
-                    scheduled_at = f"{y}-{m.zfill(2)}-{d.zfill(2)}T{time_part}:00"
-                except:
-                    pass
-
-        # Determinar status basado en si tiene score o fecha pasada
-        status_id = 1  # próximo por default
-        if home_sets > 0 or away_sets > 0:
-            status_id = 2  # terminado
-        elif scheduled_at:
-            try:
-                match_time = datetime.fromisoformat(scheduled_at)
-                if match_time < datetime.now():
-                    status_id = 2  # terminado
-            except:
-                pass
-
-        # Filtrar partidos anteriores a hoy
-        if scheduled_at:
-            try:
-                match_date = datetime.fromisoformat(scheduled_at).date()
-                if match_date < datetime.now().date():
-                    continue
-            except:
-                pass
-
-        # Nombres de equipos — buscar spans con clase TeamName
-        team_names = re.findall(r'TeamName[^>]*>([^<]{3,60})<', block)
-        home = team_names[0].strip() if len(team_names) > 0 else '—'
-        away = team_names[1].strip() if len(team_names) > 1 else '—'
-
-        matches.append({
-            'id': match_id,
-            'home': home,
-            'away': away,
-            'time': time_str,
-            'scheduledAt': scheduled_at,
-            'statusId': status_id,
-            'homeTeamSets': home_sets,
-            'awayTeamSets': away_sets,
-            'categoryName': division_name,
-        })
+        for mb in match_blocks[1:]:
+            result = parse_match_block(mb, division_name)
+            if result and result['id'] not in seen_ids:
+                seen_ids.add(result['id'])
+                matches.append(result)
 
     return matches
 
