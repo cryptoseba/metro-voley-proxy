@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY</div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v1.8</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -322,8 +322,19 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
       <!-- Filtros Mayores -->
       <div class="card" id="filtros-mayores" style="display:none">
         <div class="card-title">Partidos disponibles</div>
-        <div class="btn-row" style="margin-bottom:16px">
-          <button class="btn accent" onclick="buscarMayores()">Ver partidos de hoy</button>
+        <div class="btn-row" style="margin-bottom:12px;gap:8px;align-items:flex-end">
+          <div class="form-group" style="flex:1;margin:0">
+            <label>División</label>
+            <select id="may-division" onchange="buscarMayores()">
+              <option value="dh_cab">División de Honor CAB</option>
+              <option value="p1_cab">Primera División CAB</option>
+              <option value="p2_cab">Segunda División CAB</option>
+              <option value="dh_dam">División de Honor DAM</option>
+              <option value="p1_dam">Primera División DAM</option>
+              <option value="p2_dam">Segunda División DAM</option>
+            </select>
+          </div>
+          <button class="btn accent" onclick="buscarMayores()" style="flex-shrink:0;margin-bottom:0">Buscar</button>
         </div>
         <div id="may-results"></div>
 
@@ -692,18 +703,37 @@ async function buscarInferiores() {
     const res  = await fetch(`${PROXY_URL}/api/metro/matches?date=${date}&genderId=${gender}&categoryId=${cat}&division=${encodeURIComponent(div)}`);
     const data = await res.json();
     renderMatchList(el, data.matches || [], 'metrovoley');
+    // Restaurar selección visual si hay un partido aplicado
+    const appliedId = state.config.match_id;
+    if (appliedId && state.config.data_source === 'metrovoley') {
+      const card = document.getElementById(`mc-${appliedId}`);
+      if (card) {
+        card.classList.add('selected');
+        document.getElementById('btn-aplicar-lista')?.removeAttribute('disabled');
+      }
+    }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
   }
 }
 
 async function buscarMayores() {
-  const el = document.getElementById('may-results');
+  const el  = document.getElementById('may-results');
+  const div = document.getElementById('may-division')?.value || 'dh_cab';
   el.innerHTML = '<div style="color:var(--text3);font-size:13px"><span class="loading"></span> Buscando...</div>';
   try {
-    const res  = await fetch(`${PROXY_URL}/api/dataproject/matches`);
+    const res  = await fetch(`${PROXY_URL}/api/dataproject/matches?division=${div}`);
     const data = await res.json();
     renderMatchList(el, data.matches || [], 'dataproject');
+    // Restaurar selección visual si hay un partido aplicado
+    const appliedId = state.config.match_id;
+    if (appliedId && state.config.data_source === 'dataproject') {
+      const card = document.getElementById(`mc-${appliedId}`);
+      if (card) {
+        card.classList.add('selected');
+        document.getElementById('btn-aplicar-lista')?.removeAttribute('disabled');
+      }
+    }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
   }
