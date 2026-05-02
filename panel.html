@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.7</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.8</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1269,18 +1269,28 @@ async function deletePlayer(id, teamId) {
 function syncColorText(colorId, textId) { const v = document.getElementById(textId).value; if(/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById(colorId).value = v; }
 
 // ── POSICIÓN / PREVIEW MARCADOR ───────────────────────────────
-function initPreview() { resizePreview(); window.addEventListener('resize', resizePreview); }
+function initPreview() {
+  const c = document.getElementById('preview-container');
+  if (!c) return;
+  // ResizeObserver dispara cuando el contenedor realmente tiene dimensiones
+  const ro = new ResizeObserver(() => resizePreview());
+  ro.observe(c);
+  window.addEventListener('resize', resizePreview);
+}
+
 function resizePreview() {
   const c = document.getElementById('preview-container');
   const f = document.getElementById('preview-iframe');
-  if (!c) return;
-  const scale = c.offsetWidth / 1280;
+  if (!c || !f) return;
+  const w = c.offsetWidth;
+  if (w === 0) return; // todavía oculto, esperar
+  const scale = w / 1280;
   f.style.transform = `scale(${scale})`;
   c.style.height = (720 * scale) + 'px';
 
   const cv = document.getElementById('preview-container-voley');
   const fv = document.getElementById('preview-iframe-voley');
-  if (cv && fv) {
+  if (cv && fv && cv.offsetWidth > 0) {
     const sv = cv.offsetWidth / 1280;
     fv.style.transform = `scale(${sv})`;
     cv.style.height = (720 * sv) + 'px';
