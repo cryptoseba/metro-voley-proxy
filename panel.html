@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.3</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.5</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -640,6 +640,21 @@ async function initApp() {
   checkConnection();
   document.getElementById('overlay-url').textContent = OVERLAY_URL;
   initPreview();
+  // Restaurar tab activo
+  try {
+    const savedTab = localStorage.getItem('activeTab');
+    if (savedTab && document.getElementById('tab-' + savedTab)) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('tab-' + savedTab).classList.add('active');
+      document.querySelectorAll('.nav-item').forEach(n => {
+        if (n.getAttribute('onclick')?.includes(`'${savedTab}'`)) n.classList.add('active');
+      });
+      if (savedTab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); }
+      if (savedTab === 'posicion') updatePreview();
+      if (savedTab === 'overlays') refreshOverlayPreview();
+    }
+  } catch(e) {}
 }
 
 async function loadAll() {
@@ -678,6 +693,7 @@ function renderAll() {
   renderOverlays();
   renderCarousel();
   plantelSide = state.config.plantel_team || 'home';
+  updatePreview();
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -686,6 +702,7 @@ function switchTab(tab) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   event.target.classList.add('active');
+  try { localStorage.setItem('activeTab', tab); } catch(e) {}
   if (tab === 'posicion') updatePreview();
   if (tab === 'overlays') refreshOverlayPreview();
   if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) refreshPartidoScore(); }
