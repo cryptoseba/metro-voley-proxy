@@ -78,8 +78,15 @@ def parse_match_block(block, division_name):
         except:
             pass
 
-    # Nombres — cada partido tiene exactamente 2 TeamName
+    # Nombres — buscar con varios patrones
     team_names = re.findall(r'TeamName[^>]*>([^<]{3,60})<', block)
+    if len(team_names) < 2:
+        team_names = re.findall(r'class="[^"]*TeamName[^"]*"[^>]*>([^<]{3,60})<', block)
+    if len(team_names) < 2:
+        # Fallback: buscar FedCode como nombre corto
+        fed_codes = re.findall(r'HF_FedCode[^>]*value="([^"]{2,20})"', block)
+        if len(fed_codes) >= 2:
+            team_names = fed_codes
     home = team_names[0].strip() if len(team_names) > 0 else '—'
     away = team_names[1].strip() if len(team_names) > 1 else '—'
 
@@ -112,6 +119,8 @@ def parse_fixture(html, division_name):
                 seen_ids.add(result['id'])
                 matches.append(result)
 
+    # Ordenar por fecha
+    matches.sort(key=lambda m: m['scheduledAt'] or '')
     return matches
 
 class handler(BaseHTTPRequestHandler):
