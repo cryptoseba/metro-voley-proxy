@@ -78,6 +78,15 @@ def parse_fixture(html, division_name):
             except:
                 pass
 
+        # Filtrar partidos anteriores a hoy
+        if scheduled_at:
+            try:
+                match_date = datetime.fromisoformat(scheduled_at).date()
+                if match_date < datetime.now().date():
+                    continue
+            except:
+                pass
+
         # Nombres de equipos — buscar spans con clase TeamName
         team_names = re.findall(r'TeamName[^>]*>([^<]{3,60})<', block)
         home = team_names[0].strip() if len(team_names) > 0 else '—'
