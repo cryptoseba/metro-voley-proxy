@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.2</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.4</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -304,6 +304,9 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         </div>
         <div class="btn-row">
           <button class="btn accent" onclick="buscarInferiores()">Buscar partidos</button>
+        </div>
+        <div id="inf-team-filter" style="display:none;margin-bottom:12px">
+          <input type="text" id="inf-team-input" placeholder="Filtrar por equipo..." oninput="filtrarEquipoInferiores()" style="width:100%">
         </div>
         <div id="inf-results" style="margin-top:16px"></div>
 
@@ -734,19 +737,51 @@ async function buscarInferiores() {
     if (date) url += `&date=${date}`;
     const res  = await fetch(`${PROXY_URL}/api/metro/matches?date=${date}&genderId=${gender}&categoryId=${cat}&division=${div}`);
     const data = await res.json();
-    renderMatchList(el, data.matches || [], 'metrovoley');
+    state.infMatches = data.matches || []; // guardar para filtrar
+    renderMatchList(el, state.infMatches, 'metrovoley');
+    // Mostrar filtro si hay suficientes partidos
+    const filterEl = document.getElementById('inf-team-filter');
+    if (filterEl) filterEl.style.display = state.infMatches.length > 10 ? 'block' : 'none';
+    document.getElementById('inf-team-input') && (document.getElementById('inf-team-input').value = '');
     // Restaurar selección visual si hay un partido aplicado
     const appliedId = state.config.match_id;
     if (appliedId && state.config.data_source === 'metrovoley') {
-      const card = document.getElementById(`mc-${appliedId}`);
-      if (card) {
-        card.classList.add('selected');
-        document.getElementById('btn-aplicar-lista')?.removeAttribute('disabled');
-      }
+      restoreCardSelection(appliedId);
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
   }
+}
+
+function filtrarEquipoInferiores() {
+  const q = document.getElementById('inf-team-input')?.value.toLowerCase().trim() || '';
+  const el = document.getElementById('inf-results');
+  const all = state.infMatches || [];
+  const filtered = q
+    ? all.filter(m => {
+        const h = (m.homeTeam?.name || m.home || '').toLowerCase();
+        const a = (m.awayTeam?.name || m.away || '').toLowerCase();
+        return h.includes(q) || a.includes(q);
+      })
+    : all;
+  renderMatchList(el, filtered, 'metrovoley');
+  const appliedId = state.config.match_id;
+  if (appliedId && state.config.data_source === 'metrovoley') {
+    restoreCardSelection(appliedId);
+  }
+}
+
+function restoreCardSelection(id) {
+  const card = document.getElementById(`mc-${id}`);
+  if (!card) return;
+  card.classList.add('selected');
+  document.getElementById('btn-aplicar-lista')?.remove();
+  const btn = document.createElement('button');
+  btn.id = 'btn-aplicar-lista';
+  btn.className = 'btn-aplicar';
+  btn.textContent = 'Aplicar partido seleccionado';
+  btn.onclick = aplicarPartidoSeleccionado;
+  card.insertAdjacentElement('afterend', btn);
 }
 
 async function buscarMayores() {
@@ -757,14 +792,9 @@ async function buscarMayores() {
     const res  = await fetch(`${PROXY_URL}/api/dataproject/matches?division=${div}`);
     const data = await res.json();
     renderMatchList(el, data.matches || [], 'dataproject');
-    // Restaurar selección visual si hay un partido aplicado
     const appliedId = state.config.match_id;
     if (appliedId && state.config.data_source === 'dataproject') {
-      const card = document.getElementById(`mc-${appliedId}`);
-      if (card) {
-        card.classList.add('selected');
-        document.getElementById('btn-aplicar-lista')?.removeAttribute('disabled');
-      }
+      restoreCardSelection(appliedId);
     }
   } catch(e) {
     el.innerHTML = `<div style="color:var(--error);font-size:13px">Error: ${e.message}</div>`;
@@ -819,16 +849,28 @@ function renderMatchList(el, matches, source) {
         ${scoreDisplay ? `<div class="match-card-score">${scoreDisplay}</div>` : ''}
       </div>
     </div>`;
-  }).join('') + `<button class="btn-aplicar" id="btn-aplicar-lista" disabled onclick="aplicarPartidoSeleccionado()">Aplicar partido seleccionado</button>`;
+  }).join('');
 }
 
 function selectMatchCard(m, source) {
   document.querySelectorAll('.match-card').forEach(c => c.classList.remove('selected'));
+  // Eliminar botón anterior si existe
+  document.getElementById('btn-aplicar-lista')?.remove();
   const id = m.id || m.ChampionshipMatchID;
-  document.getElementById('mc-' + id)?.classList.add('selected');
+  const card = document.getElementById('mc-' + id);
+  if (card) {
+    card.classList.add('selected');
+    // Insertar botón justo después de la card
+    const btn = document.createElement('button');
+    btn.id = 'btn-aplicar-lista';
+    btn.className = 'btn-aplicar';
+    btn.textContent = 'Aplicar partido seleccionado';
+    btn.onclick = aplicarPartidoSeleccionado;
+    card.insertAdjacentElement('afterend', btn);
+    // Scroll suave para que se vea el botón
+    setTimeout(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
   partidoSeleccionado = { ...m, _source: source, _id: id };
-  const btn = document.getElementById('btn-aplicar-lista');
-  if (btn) btn.disabled = false;
 }
 
 async function aplicarPartidoSeleccionado() {
