@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.0</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.3</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -299,14 +299,6 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
               <option value="14">Nivel D</option>
               <option value="15">Nivel E</option>
               <option value="31">Nivel F</option>
-              <option value="6">División de Honor</option>
-              <option value="7">Primera</option>
-              <option value="8">Segunda</option>
-              <option value="9">Tercera</option>
-              <option value="10">Cuarta</option>
-              <option value="11">Quinta</option>
-              <option value="12">Sexta</option>
-              <option value="13">Séptima</option>
             </select>
           </div>
         </div>
@@ -644,6 +636,7 @@ if (sessionStorage.getItem('mv_logged')) {
 async function initApp() {
   document.getElementById('inf-date').value = new Date().toISOString().split('T')[0];
   await loadAll();
+  state.appReady = true;
   checkConnection();
   document.getElementById('overlay-url').textContent = OVERLAY_URL;
   initPreview();
@@ -695,7 +688,7 @@ function switchTab(tab) {
   event.target.classList.add('active');
   if (tab === 'posicion') updatePreview();
   if (tab === 'overlays') refreshOverlayPreview();
-  if (tab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); }
+  if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) refreshPartidoScore(); }
 }
 
 // ── CONEXIÓN TAB ──────────────────────────────────────────────
@@ -874,14 +867,10 @@ function renderPartidoSeleccionado() {
   const awayName = info.awayTeam?.name || info.GuestEmpty || info.away || '—';
   const cat      = [info.categoryName, info.divisionName].filter(Boolean).join(' · ');
   const canal    = info._source === 'dataproject' ? 'Mayores FMV' : 'Inferiores FMV';
-  // Hora: MetroVoley usa info.time, DataProject usa info.MatchDateTime
   const rawTime  = info.time ? info.time.slice(0,5) : (info.MatchDateTime ? info.MatchDateTime.slice(11,16) : '');
-  const score    = (info.homeTeamSets !== undefined) ? `${info.homeTeamSets}-${info.awayTeamSets}` :
-                   (info.WonSetHome !== undefined) ? `${info.WonSetHome}-${info.WonSetGuest}` : null;
 
   el.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:14px">
-      ${score ? `<div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--text3);flex-shrink:0">${score}</div>` : ''}
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600;color:var(--text2);line-height:1.35;overflow-wrap:break-word">${homeName} vs ${awayName}</div>
         <div style="font-size:12px;color:var(--text3);margin-top:3px">${[canal, cat, rawTime, 'ID: '+info._id].filter(Boolean).join(' · ')}</div>
@@ -891,10 +880,13 @@ function renderPartidoSeleccionado() {
 
 async function refreshPartidoScore() {
   const matchId    = state.config.match_id;
-  const dataSource = state.config.data_source || 'metrovoley';
+  // Usar _source de partidoInfo como fuente más confiable (sobrevive al F5)
+  const dataSource = state.config.data_source || state.partidoInfo?._source || 'metrovoley';
   const el         = document.getElementById('partido-seleccionado-info');
   const scoreEl    = document.getElementById('partido-live-score');
   if (!matchId || !el) return;
+  // Guard: si data_source no está cargado todavía, no hacer nada
+  if (!state.config.data_source && !state.partidoInfo?._source) return;
 
   // Insertar o reusar el badge de score en vivo
   if (!scoreEl) {
