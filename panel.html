@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v1.8</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v1.9</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -652,6 +652,21 @@ async function loadAll() {
   state.config   = (config && config[0]) || {};
   state.overlays = overlays || [];
   state.carousel = carousel || [];
+
+  // Restaurar info del partido desde localStorage
+  try {
+    const saved = localStorage.getItem('partidoInfo');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Solo restaurar si el match_id coincide con el guardado en Supabase
+      if (parsed._id === state.config.match_id || parsed._id === String(state.config.match_id)) {
+        state.partidoInfo = parsed;
+      } else {
+        localStorage.removeItem('partidoInfo');
+      }
+    }
+  } catch(e) {}
+
   renderAll();
 }
 
@@ -824,11 +839,11 @@ async function aplicarPartido(matchId, source, matchData) {
 
   // Guardar info del partido para mostrar en tab Partido
   if (matchData) {
-    state.partidoInfo = matchData;
-    state.partidoInfo._source = dataSource;
+    state.partidoInfo = { ...matchData, _id: String(matchId), _source: dataSource };
   } else {
-    state.partidoInfo = { _id: matchId, _source: dataSource };
+    state.partidoInfo = { _id: String(matchId), _source: dataSource };
   }
+  try { localStorage.setItem('partidoInfo', JSON.stringify(state.partidoInfo)); } catch(e) {}
 
   showToast('Partido aplicado ✓', 'success');
   renderPartidoSeleccionado();
