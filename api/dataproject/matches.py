@@ -31,16 +31,16 @@ def fetch_fixture(competition_id):
 def parse_fixture(html, division_name):
     matches = []
 
-    # Extraer bloques de partido: cada uno tiene HF_LegID
-    # Dividimos el HTML por bloques usando el patrón del LegID hidden field
+    # Dividir por bloques usando HF_LegID (cada bloque = una jornada/partido)
     blocks = re.split(r'(?=<input[^>]*name="[^"]*HF_LegID[^"]*")', html)
 
     for block in blocks[1:]:  # skip first empty
-        # LegID (ID del partido)
-        leg_id_m = re.search(r'HF_LegID[^>]*value="(\d+)"', block)
-        if not leg_id_m:
+        # ChampionshipMatchID — extraer mID del onclick
+        # Patrón: MatchStatistics.aspx?mID=6237&ID=56&...
+        mid_m = re.search(r'MatchStatistics\.aspx\?mID=(\d+)', block)
+        if not mid_m:
             continue
-        match_id = int(leg_id_m.group(1))
+        match_id = int(mid_m.group(1))
 
         # Scores
         home_sets_m = re.search(r'HF_WonSetHome[^>]*value="(\d+)"', block)
