@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.9</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.0</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1286,12 +1286,11 @@ function initPreview() {
 function resizePreview() {
   const c = document.getElementById('preview-container');
   const f = document.getElementById('preview-iframe');
-  if (!c || !f) return;
-  const w = c.offsetWidth;
-  if (w === 0) return; // todavía oculto, esperar
-  const scale = w / 1280;
-  f.style.transform = `scale(${scale})`;
-  c.style.height = (720 * scale) + 'px';
+  if (c && f && c.offsetWidth > 0) {
+    const scale = c.offsetWidth / 1280;
+    f.style.transform = `scale(${scale})`;
+    c.style.height = (720 * scale) + 'px';
+  }
 
   const cv = document.getElementById('preview-container-voley');
   const fv = document.getElementById('preview-iframe-voley');
@@ -1387,7 +1386,6 @@ async function refreshOverlayPreview(slug) {
     document.getElementById('preview-voley').style.display = 'block';
     const iframe = document.getElementById('preview-iframe-voley');
     iframe.srcdoc = buildPreviewHtml('live');
-    // Múltiples intentos para asegurar que el contenedor tenga ancho real
     setTimeout(resizePreview, 50);
     setTimeout(resizePreview, 200);
     setTimeout(resizePreview, 500);
