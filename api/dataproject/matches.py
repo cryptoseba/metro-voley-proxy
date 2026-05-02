@@ -78,15 +78,13 @@ def parse_match_block(block, division_name):
         except:
             pass
 
-    # Nombres — buscar con varios patrones
-    team_names = re.findall(r'TeamName[^>]*>([^<]{3,60})<', block)
+    # Nombres — Label2=local, Label4=visitante (sufijos del id dinámico)
+    team_names = re.findall(r'TeamName[^>]*>\s*([^<]{3,60}?)\s*<', block)
     if len(team_names) < 2:
-        team_names = re.findall(r'class="[^"]*TeamName[^"]*"[^>]*>([^<]{3,60})<', block)
-    if len(team_names) < 2:
-        # Fallback: buscar FedCode como nombre corto
-        fed_codes = re.findall(r'HF_FedCode[^>]*value="([^"]{2,20})"', block)
-        if len(fed_codes) >= 2:
-            team_names = fed_codes
+        label2 = re.search(r'id="[^"]*_Label2"[^>]*>\s*([^<]{3,60}?)\s*<', block)
+        label4 = re.search(r'id="[^"]*_Label4"[^>]*>\s*([^<]{3,60}?)\s*<', block)
+        if label2 and label4:
+            team_names = [label2.group(1).strip(), label4.group(1).strip()]
     home = team_names[0].strip() if len(team_names) > 0 else '—'
     away = team_names[1].strip() if len(team_names) > 1 else '—'
 
