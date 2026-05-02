@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.5</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v2.6</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -651,7 +651,7 @@ async function initApp() {
         if (n.getAttribute('onclick')?.includes(`'${savedTab}'`)) n.classList.add('active');
       });
       if (savedTab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); }
-      if (savedTab === 'posicion') updatePreview();
+      if (savedTab === 'posicion') { updatePreview(); setTimeout(resizePreview, 100); }
       if (savedTab === 'overlays') refreshOverlayPreview();
     }
   } catch(e) {}
@@ -703,7 +703,7 @@ function switchTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   event.target.classList.add('active');
   try { localStorage.setItem('activeTab', tab); } catch(e) {}
-  if (tab === 'posicion') updatePreview();
+  if (tab === 'posicion') { updatePreview(); setTimeout(resizePreview, 50); }
   if (tab === 'overlays') refreshOverlayPreview();
   if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) refreshPartidoScore(); }
 }
