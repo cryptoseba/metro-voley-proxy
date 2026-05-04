@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.5</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.6</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1171,66 +1171,140 @@ async function resolveTeams() {
 }
 
 function renderResolverSlot(side, label, rawName, resolved) {
-  const t = resolved.team;
-  const bar = t ? `linear-gradient(to right,${t.color_stripe_1},${t.color_stripe_2},${t.color_stripe_3})` : 'var(--border)';
+  const t   = resolved.team;
+  const cp  = t?.color_primary  || '#FF5C1A';
+  const s1  = t?.color_stripe_1 || '#FF5C1A';
+  const s2  = t?.color_stripe_2 || '#FF5C1A';
+  const s3  = t?.color_stripe_3 || '#FF5C1A';
+  const bar = `linear-gradient(to right,${s1},${s2},${s3})`;
   const badge = resolved.aliased
-    ? '<span style="font-size:10px;color:var(--accent);margin-left:6px">✓ guardado</span>'
-    : (t ? '<span style="font-size:10px;color:var(--text3);margin-left:6px">sugerido</span>' : '');
+    ? '<span style="font-size:10px;color:var(--accent)">✓ guardado</span>'
+    : (t ? '<span style="font-size:10px;color:var(--text3)">sugerido</span>' : '');
 
   const selectOpts = '<option value="">Sin asignar</option>' +
     state.teams.map(tm => `<option value="${tm.id}" ${t?.id === tm.id ? 'selected' : ''}>${tm.name}</option>`).join('');
 
-  return `<div style="background:var(--surface2);border-radius:var(--radius);padding:12px">
-    <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">${label}</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;overflow-wrap:break-word">${rawName}</div>
-    <div style="height:4px;border-radius:2px;background:${bar};margin-bottom:10px"></div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-      <select id="resolver-${side}" onchange="onResolverChange('${side}','${rawName.replace(/'/g,"\\'")}')">
-        ${selectOpts}
-      </select>${badge}
+  return `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px">
+    <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">${label}</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;overflow-wrap:break-word;line-height:1.4">${rawName}</div>
+
+    <div style="height:5px;border-radius:3px;background:${bar};margin-bottom:12px"></div>
+
+    <div class="form-group" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <select id="resolver-${side}" style="flex:1" onchange="onResolverChange('${side}','${rawName.replace(/'/g,"\\'")}')">
+          ${selectOpts}
+        </select>
+        ${badge}
+      </div>
     </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
-      <input type="checkbox" id="alias-${side}" ${resolved.aliased ? 'checked' : ''}>
-      Guardar equivalencia
-    </label>
+
+    <button class="btn sm" style="width:100%;margin-bottom:0" onclick="toggleResolverEdit('${side}')">✏️ Editar equipo</button>
+
+    <div id="resolver-edit-${side}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Alias (nombre en overlay)</label>
+        <input type="text" id="resolver-alias-${side}" placeholder="ej: SAN GREGORIO" value="${t?.name || ''}">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label>Color principal</label>
+        <div class="color-input-wrap">
+          <input type="color" id="resolver-cp-${side}" value="${cp}" oninput="syncColor('resolver-cp-${side}','resolver-cp-${side}-text');updateResolverBar('${side}')">
+          <input type="text"  id="resolver-cp-${side}-text" value="${cp}" oninput="syncColorText('resolver-cp-${side}','resolver-cp-${side}-text');updateResolverBar('${side}')">
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Barra del marcador</div>
+      <div class="form-row triple" style="margin-bottom:10px">
+        <div class="form-group">
+          <label>Seg. 1</label>
+          <div class="color-input-wrap">
+            <input type="color" id="resolver-s1-${side}" value="${s1}" oninput="syncColor('resolver-s1-${side}','resolver-s1-${side}-text');updateResolverBar('${side}')">
+            <input type="text"  id="resolver-s1-${side}-text" value="${s1}" oninput="syncColorText('resolver-s1-${side}','resolver-s1-${side}-text');updateResolverBar('${side}')">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Seg. 2</label>
+          <div class="color-input-wrap">
+            <input type="color" id="resolver-s2-${side}" value="${s2}" oninput="syncColor('resolver-s2-${side}','resolver-s2-${side}-text');updateResolverBar('${side}')">
+            <input type="text"  id="resolver-s2-${side}-text" value="${s2}" oninput="syncColorText('resolver-s2-${side}','resolver-s2-${side}-text');updateResolverBar('${side}')">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Seg. 3</label>
+          <div class="color-input-wrap">
+            <input type="color" id="resolver-s3-${side}" value="${s3}" oninput="syncColor('resolver-s3-${side}','resolver-s3-${side}-text');updateResolverBar('${side}')">
+            <input type="text"  id="resolver-s3-${side}-text" value="${s3}" oninput="syncColorText('resolver-s3-${side}','resolver-s3-${side}-text');updateResolverBar('${side}')">
+          </div>
+        </div>
+      </div>
+      <button class="btn accent sm" style="width:100%" onclick="saveResolverTeam('${side}','${rawName.replace(/'/g,"\\'")}')">Guardar equipo y equivalencia</button>
+    </div>
   </div>`;
 }
 
-function onResolverChange(side, rawName) {
-  const teamId = document.getElementById(`resolver-${side}`)?.value;
-  const team   = state.teams.find(t => t.id === teamId);
-  if (side === 'home') state._resolverHome = { rawName, team, aliased: false };
-  else                 state._resolverAway = { rawName, team, aliased: false };
-  // Actualizar barra de colores
-  const bar = team
-    ? `linear-gradient(to right,${team.color_stripe_1},${team.color_stripe_2},${team.color_stripe_3})`
-    : 'var(--border)';
-  const slotEl = document.getElementById(`resolver-${side}`)?.closest('div[style*="surface2"]');
-  if (slotEl) {
-    const barEl = slotEl.querySelector('div[style*="height:4px"]');
-    if (barEl) barEl.style.background = bar;
+function toggleResolverEdit(side) {
+  const el = document.getElementById(`resolver-edit-${side}`);
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+}
+
+function updateResolverBar(side) {
+  const s1 = document.getElementById(`resolver-s1-${side}-text`)?.value || '#FF5C1A';
+  const s2 = document.getElementById(`resolver-s2-${side}-text`)?.value || '#FF5C1A';
+  const s3 = document.getElementById(`resolver-s3-${side}-text`)?.value || '#FF5C1A';
+  const slot = document.getElementById(`resolver-edit-${side}`)?.closest('div[style*="surface2"]');
+  if (slot) {
+    const barEl = slot.querySelector('div[style*="border-radius:3px"]');
+    if (barEl) barEl.style.background = `linear-gradient(to right,${s1},${s2},${s3})`;
   }
 }
 
+async function saveResolverTeam(side, rawName) {
+  const alias = document.getElementById(`resolver-alias-${side}`)?.value.trim().toUpperCase();
+  const cp    = document.getElementById(`resolver-cp-${side}-text`)?.value || '#FF5C1A';
+  const s1    = document.getElementById(`resolver-s1-${side}-text`)?.value || '#FF5C1A';
+  const s2    = document.getElementById(`resolver-s2-${side}-text`)?.value || '#FF5C1A';
+  const s3    = document.getElementById(`resolver-s3-${side}-text`)?.value || '#FF5C1A';
+  if (!alias) { showToast('Ingresá un nombre para el equipo', 'error'); return; }
+
+  // Buscar si ya existe un equipo con ese nombre
+  let team = state.teams.find(t => t.name === alias);
+  if (team) {
+    // Actualizar colores
+    await sb('teams','PATCH',{ color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },`?id=eq.${team.id}`);
+    team = { ...team, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 };
+    state.teams = state.teams.map(t => t.id === team.id ? team : t);
+  } else {
+    // Crear equipo nuevo
+    const res = await sb('teams','POST',{ name: alias, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },'');
+    team = Array.isArray(res) ? res[0] : res;
+    if (team?.id) state.teams.push(team);
+  }
+
+  // Guardar alias
+  if (team?.id) {
+    await sb('team_aliases','POST',{ raw_name: rawName, team_id: team.id },'?on_conflict=raw_name');
+    // Actualizar resolver state
+    if (side === 'home') state._resolverHome = { rawName, team, aliased: true };
+    else                 state._resolverAway = { rawName, team, aliased: true };
+  }
+
+  showToast('Equipo guardado ✓', 'success');
+  await loadAll();
+  resolveTeams();
+}
+
 async function applyResolverConfig() {
-  const home = state._resolverHome;
-  const away = state._resolverAway;
+  const homeId = document.getElementById('resolver-home')?.value;
+  const awayId = document.getElementById('resolver-away')?.value;
+  const homeTeam = state.teams.find(t => t.id === homeId);
+  const awayTeam = state.teams.find(t => t.id === awayId);
 
-  // Guardar aliases si están marcados
-  const saves = [];
-  if (home?.team && document.getElementById('alias-home')?.checked) {
-    saves.push(sb('team_aliases','POST',{ raw_name: home.rawName, team_id: home.team.id },'?on_conflict=raw_name'));
-  }
-  if (away?.team && document.getElementById('alias-away')?.checked) {
-    saves.push(sb('team_aliases','POST',{ raw_name: away.rawName, team_id: away.team.id },'?on_conflict=raw_name'));
-  }
-  await Promise.all(saves);
-
-  // Guardar config
   const cfg = {
     match_id:     state.config.match_id || '',
-    home_team_id: home?.team?.id || null,
-    away_team_id: away?.team?.id || null,
+    home_team_id: homeId || null,
+    away_team_id: awayId || null,
     data_source:  state.config.data_source || 'metrovoley',
     updated_at:   new Date().toISOString()
   };
@@ -1238,7 +1312,6 @@ async function applyResolverConfig() {
   state.config = { ...state.config, ...cfg };
   showToast('Configuración guardada', 'success');
   checkConnection();
-  resolveTeams(); // re-render para mostrar badges "guardado"
 }
 
 async function sbQuery(table, filters = '') {
