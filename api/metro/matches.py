@@ -51,9 +51,16 @@ class handler(BaseHTTPRequestHandler):
                 matches = props.get('matches', [])
 
                 if isinstance(matches, list):
-                    # Sin paginación — lista directa
-                    items = matches
-                    break
+                    # MetroVoley devuelve lista directa — igual intentar siguiente página
+                    items.extend(matches)
+                    if len(matches) == 0:
+                        break
+                    # Si trajo menos de 15, probablemente es la última página
+                    if len(matches) < 15:
+                        break
+                    page += 1
+                    if page > 50:
+                        break
                 else:
                     page_data = matches.get('data', [])
                     items.extend(page_data)
