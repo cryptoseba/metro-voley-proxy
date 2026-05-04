@@ -24,37 +24,50 @@ class handler(BaseHTTPRequestHandler):
             if category_id: params += f'&categoryId={category_id}'
             if division:    params += f'&division={division}'
 
-            url = f'https://metrovoley.com.ar/matches?{params}'
-            req = urllib.request.Request(url, headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'X-Inertia': 'true',
-                'X-Inertia-Version': INERTIA_VERSION,
-                'X-Requested-With': 'XMLHttpRequest',
-            })
+            # Paginar hasta traer todos los partidos
+            items = []
+            page = 1
+            while True:
+                paged_params = params + f'&page={page}'
+                url = f'https://metrovoley.com.ar/matches?{paged_params}'
+                req = urllib.request.Request(url, headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'X-Inertia': 'true',
+                    'X-Inertia-Version': INERTIA_VERSION,
+                    'X-Requested-With': 'XMLHttpRequest',
+                })
+                try:
+                    res = urllib.request.urlopen(req, timeout=10)
+                    raw = res.read()
+                except urllib.error.HTTPError as e:
+                    if e.code == 409:
+                        raw = e.read()
+                    else:
+                        raise
 
-            try:
-                res = urllib.request.urlopen(req, timeout=10)
-                raw = res.read()
-            except urllib.error.HTTPError as e:
-                if e.code == 409:
-                    raw = e.read()
+                data  = json.loads(raw)
+                props = data.get('props', {})
+                matches = props.get('matches', [])
+
+                if isinstance(matches, list):
+                    # Sin paginación — lista directa
+                    items = matches
+                    break
                 else:
-                    raise
-
-            data  = json.loads(raw)
-            props = data.get('props', {})
-            matches = props.get('matches', [])
-            items   = matches if isinstance(matches, list) else matches.get('data', [])
+                    page_data = matches.get('data', [])
+                    items.extend(page_data)
+                    # Verificar si hay más páginas
+                    meta = matches.get('meta', matches.get('links', {}))
+                    current = meta.get('current_page', page)
+                    last = meta.get('last_page', meta.get('total_pages', 1))
+                    if current >= last or len(page_data) == 0:
+                        break
+                    page += 1
+                    if page > 50:  # safety cap
+                        break
 
             items = [m for m in items if m.get('categoryName','') not in ['Superiores']]
-
-            if category_id:
-                filters = props.get('filters', {})
-                cats = {str(c['id']): c['name'] for c in filters.get('categories', [])}
-                cat_name = cats.get(str(category_id))
-                if cat_name:
-                    items = [m for m in items if m.get('categoryName','') == cat_name]
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
