@@ -21,7 +21,7 @@ class handler(BaseHTTPRequestHandler):
         try:
             params = f'date={date}'
             if gender_id:   params += f'&genderId={gender_id}'
-            if category_id: params += f'&categoryId={category_id}'
+            if category_id: params += f'&category={category_id}'
             if division:    params += f'&division={division}'
 
             # Paginar hasta traer todos los partidos
