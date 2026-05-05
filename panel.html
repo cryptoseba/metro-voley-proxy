@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.0</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.1</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -694,7 +694,23 @@ async function initApp() {
   document.getElementById('inf-date').value = new Date().toISOString().split('T')[0];
   await loadAll();
   state.appReady = true;
-  if (state.config.data_source === 'manual') await loadManualState();
+  if (state.config.data_source === 'manual') {
+    await loadManualState();
+    // Activar canal manual visualmente sin triggear búsquedas
+    canalActual = 'manual';
+    ['inferiores','mayores','manual'].forEach(c => {
+      document.getElementById('canal-'+c)?.classList.toggle('active', c === 'manual');
+    });
+    document.getElementById('filtros-inferiores').style.display = 'none';
+    document.getElementById('filtros-mayores').style.display   = 'none';
+    document.getElementById('filtros-manual').style.display    = 'block';
+    renderManualTeamSelects();
+    // Pre-seleccionar equipos guardados
+    const h = document.getElementById('manual-home-team');
+    const a = document.getElementById('manual-away-team');
+    if (h) h.value = state.config.home_team_id || '';
+    if (a) a.value = state.config.away_team_id || '';
+  }
   checkConnection();
   document.getElementById('overlay-url').textContent = OVERLAY_URL;
   initPreview();
