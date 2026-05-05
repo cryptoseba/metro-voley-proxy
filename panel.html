@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.2</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.3</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -995,6 +995,19 @@ async function aplicarPartido(matchId, source, matchData) {
 
 function renderPartidoSeleccionado() {
   const el = document.getElementById('partido-seleccionado-info');
+
+  // Modo manual — mostrar equipos del control
+  if (state.config.data_source === 'manual') {
+    const home = state.teams.find(t => t.id === state.config.home_team_id);
+    const away = state.teams.find(t => t.id === state.config.away_team_id);
+    el.innerHTML = `
+      <div style="font-size:14px;font-weight:600;color:var(--text2);line-height:1.35">
+        ${home?.name || '—'} vs ${away?.name || '—'}
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:3px">🎮 Modo Manual</div>`;
+    return;
+  }
+
   const info = state.partidoInfo || (state.config.match_id ? { _id: state.config.match_id, _source: state.config.data_source } : null);
   if (!info) {
     el.innerHTML = '<div style="color:var(--text3);font-size:13px">Ningún partido seleccionado — ir a Conexión</div>';
@@ -1022,8 +1035,9 @@ async function refreshPartidoScore() {
   const el         = document.getElementById('partido-seleccionado-info');
   const scoreEl    = document.getElementById('partido-live-score');
   if (!matchId || !el) return;
-  // Guard: si data_source no está cargado todavía, no hacer nada
+  // Guard: si data_source no está cargado todavía, o es manual, no hacer nada
   if (!state.config.data_source && !state.partidoInfo?._source) return;
+  if (state.config.data_source === 'manual') return;
 
   // Insertar o reusar el badge de score en vivo
   if (!scoreEl) {
@@ -1479,7 +1493,7 @@ function updateManualDisplay() {
   // Mostrar detalle de sets jugados
   const detail = document.getElementById('mc-sets-detail');
   if (detail && manualState.set_scores.length > 0) {
-    detail.textContent = manualState.set_scores.map((s,i) => `S${i+1}: ${s.h}-${s.a}`).join('  ');
+    detail.textContent = manualState.set_scores.map((s,i) => `S${i+1}: ${s.homeTeamScore}-${s.awayTeamScore}`).join('  ');
   } else if (detail) {
     detail.textContent = '';
   }
@@ -1516,8 +1530,7 @@ async function manualUndo(side) {
 async function manualEndSet() {
   if (manualState.status === 'finished') return;
   // Guardar puntos del set
-  manualState.set_scores.push({ h: manualState.home_points, a: manualState.away_points });
-  // Sumar set al ganador
+  manualState.set_scores.push({ homeTeamScore: manualState.home_points, awayTeamScore: manualState.away_points });
   if (manualState.home_points >= manualState.away_points) manualState.home_sets++;
   else manualState.away_sets++;
   manualState.home_points = 0;
@@ -1530,7 +1543,7 @@ async function manualEndMatch() {
   if (manualState.status === 'finished') return;
   // Guardar puntos del último set si hay puntos
   if (manualState.home_points > 0 || manualState.away_points > 0) {
-    manualState.set_scores.push({ h: manualState.home_points, a: manualState.away_points });
+    manualState.set_scores.push({ homeTeamScore: manualState.home_points, awayTeamScore: manualState.away_points });
     if (manualState.home_points >= manualState.away_points) manualState.home_sets++;
     else manualState.away_sets++;
   }
