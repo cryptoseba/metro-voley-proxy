@@ -251,7 +251,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.6</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.7</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1006,6 +1006,12 @@ async function aplicarPartido(matchId, source, matchData) {
   const dataSource = source === 'dataproject' ? 'dataproject' : 'metrovoley';
   const homeName = matchData?.homeTeam?.name || matchData?.home || matchData?.HomeEmpty || null;
   const awayName = matchData?.awayTeam?.name || matchData?.away || matchData?.GuestEmpty || null;
+
+  // Resetear manual_score para que no interfiera con el overlay
+  await sb('manual_score','PATCH',{
+    home_points:0, away_points:0, home_sets:0, away_sets:0,
+    current_set:1, status:'live', set_scores:'[]', updated_at: new Date().toISOString()
+  },'?id=eq.1');
 
   await sb('overlay_config','PATCH',{
     match_id: String(matchId),
