@@ -251,7 +251,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.4</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.5</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -356,13 +356,13 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
             </select>
           </div>
         </div>
-        <div class="btn-row">
+        <div class="btn-row" style="margin-bottom:0">
           <button class="btn accent" onclick="buscarInferiores()">Buscar partidos</button>
         </div>
-        <div id="inf-team-filter" style="display:none;margin-bottom:12px">
+        <div id="inf-team-filter" style="display:none;margin-top:12px;margin-bottom:0">
           <input type="text" id="inf-team-input" class="input-dark" placeholder="Filtrar por equipo..." oninput="filtrarEquipoInferiores()">
         </div>
-        <div id="inf-results" style="margin-top:16px"></div>
+        <div id="inf-results" style="margin-top:12px"></div>
 
         <!-- Match ID manual -->
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
