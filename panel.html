@@ -251,7 +251,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.3</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.4</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1004,13 +1004,20 @@ async function aplicarManual(source) {
 
 async function aplicarPartido(matchId, source, matchData) {
   const dataSource = source === 'dataproject' ? 'dataproject' : 'metrovoley';
+  const homeName = matchData?.homeTeam?.name || matchData?.home || matchData?.HomeEmpty || null;
+  const awayName = matchData?.awayTeam?.name || matchData?.away || matchData?.GuestEmpty || null;
+
   await sb('overlay_config','PATCH',{
     match_id: String(matchId),
     data_source: dataSource,
+    home_raw_name: homeName,
+    away_raw_name: awayName,
     updated_at: new Date().toISOString()
   },'?id=eq.1');
-  state.config.match_id   = String(matchId);
+  state.config.match_id    = String(matchId);
   state.config.data_source = dataSource;
+  state.config.home_raw_name = homeName;
+  state.config.away_raw_name = awayName;
 
   // Guardar info del partido para mostrar en tab Partido
   if (matchData) {
@@ -1426,11 +1433,13 @@ async function applyResolverConfig() {
   const home = state._resolverHome;
   const away = state._resolverAway;
   const cfg = {
-    match_id:     state.config.match_id || '',
-    home_team_id: home?.team?.id || null,
-    away_team_id: away?.team?.id || null,
-    data_source:  state.config.data_source || 'metrovoley',
-    updated_at:   new Date().toISOString()
+    match_id:      state.config.match_id || '',
+    home_team_id:  home?.team?.id || null,
+    away_team_id:  away?.team?.id || null,
+    home_raw_name: home?.rawName || null,
+    away_raw_name: away?.rawName || null,
+    data_source:   state.config.data_source || 'metrovoley',
+    updated_at:    new Date().toISOString()
   };
   await sb('overlay_config','PATCH',cfg,'?id=eq.1');
   state.config = { ...state.config, ...cfg };
