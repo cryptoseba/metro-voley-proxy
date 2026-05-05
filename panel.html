@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.1</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.2</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1243,6 +1243,7 @@ async function resolveTeams() {
     return;
   }
   if (card) card.style.display = 'block';
+  const info = state.partidoInfo;
   if (!info?._id) {
     el.innerHTML = '<div style="color:var(--text3);font-size:13px">Aplicá un partido para ver los equipos sugeridos.</div>';
     return;
