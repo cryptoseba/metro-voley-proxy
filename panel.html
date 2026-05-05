@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.3</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.4</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -727,7 +727,7 @@ async function initApp() {
       document.querySelectorAll('.nav-item').forEach(n => {
         if (n.getAttribute('onclick')?.includes(`'${savedTab}'`)) n.classList.add('active');
       });
-      if (savedTab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); resolveTeams(); }
+      if (savedTab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); resolveTeams(); renderManualControl(); }
       if (savedTab === 'posicion') { setTimeout(updatePreview, 200); }
       if (savedTab === 'overlays') refreshOverlayPreview();
     }
