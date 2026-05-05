@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.0</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.1</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1478,6 +1478,8 @@ async function aplicarManualMode() {
   const cfg = { home_team_id: homeId, away_team_id: awayId, data_source: 'manual', match_id: 0, updated_at: new Date().toISOString() };
   await sb('overlay_config','PATCH', cfg, '?id=eq.1');
   state.config = { ...state.config, ...cfg };
+  state.partidoInfo = null;
+  try { localStorage.removeItem('partidoInfo'); } catch(e) {}
 
   showToast('Modo manual activado', 'success');
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1485,6 +1487,7 @@ async function aplicarManualMode() {
   document.getElementById('tab-partido').classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n => { if(n.getAttribute('onclick')?.includes("'partido'")) n.classList.add('active'); });
   localStorage.setItem('activeTab','partido');
+  renderPartidoSeleccionado();
   renderManualControl();
   resolveTeams();
 }
