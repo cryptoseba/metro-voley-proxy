@@ -67,27 +67,8 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .form-group input:focus, .form-group select:focus { border-color:var(--accent); }
 .form-group select option { background:var(--surface2); }
 .color-input-wrap { display:flex; gap:8px; align-items:center; }
-.color-input-wrap input[type="color"] { width:36px; height:36px; padding:2px; border-radius:6px; cursor:pointer; flex-shrink:0; border:1px solid var(--border); background:var(--surface2); }
+.color-input-wrap input[type="color"] { width:36px; height:36px; padding:2px; border-radius:6px; cursor:pointer; flex-shrink:0; }
 .color-input-wrap input[type="text"] { flex:1; }
-
-/* Input dark reutilizable para inputs sueltos */
-.input-dark {
-  background: var(--surface2) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  padding: 10px 12px !important;
-  color: var(--text) !important;
-  font-family: 'DM Sans', sans-serif !important;
-  font-size: 13px !important;
-  outline: none !important;
-  transition: border-color 0.2s, box-shadow 0.2s !important;
-  -webkit-appearance: none !important;
-  appearance: none !important;
-}
-.input-dark:focus {
-  border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(255,92,26,0.12) !important;
-}
 
 /* BUTTONS */
 .btn { background:var(--surface2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:10px 18px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:all 0.2s; }
@@ -216,15 +197,9 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 .match-card-status { font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; }
 .status-live { background:rgba(255,92,26,0.15); color:var(--accent); }
 .status-soon { background:rgba(255,255,255,0.08); color:var(--text2); }
-.btn-aplicar { 
-  background:var(--accent); color:white; border:none; border-radius:var(--radius); 
-  padding:13px; font-size:12px; font-weight:700; cursor:pointer; width:100%; 
-  margin-top:16px; margin-bottom:4px; letter-spacing:1.5px; text-transform:uppercase;
-  transition: opacity 0.2s, transform 0.1s;
-}
-.btn-aplicar:hover { opacity:0.9; transform: translateY(-1px); }
-.btn-aplicar:active { transform: translateY(0); }
-.btn-aplicar:disabled { opacity:0.3; cursor:default; transform:none; }
+.btn-aplicar { background:var(--accent); color:white; border:none; border-radius:var(--radius); padding:12px; font-size:13px; font-weight:600; cursor:pointer; width:100%; margin-top:8px; letter-spacing:1px; text-transform:uppercase; }
+.btn-aplicar:hover { opacity:0.85; }
+.btn-aplicar:disabled { opacity:0.35; cursor:default; }
 </style>
 </head>
 <body>
@@ -244,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v4.8</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.0</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -275,14 +250,17 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
           <div class="canal-btn active" id="canal-inferiores" onclick="setCanal('inferiores')">
             <div style="font-size:22px;margin-bottom:6px">🔵</div>
             <div style="font-size:14px;font-weight:600">Inferiores FMV</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">metrovoley.com.ar</div>
           </div>
           <div class="canal-btn" id="canal-mayores" onclick="setCanal('mayores')">
             <div style="font-size:22px;margin-bottom:6px">🟢</div>
             <div style="font-size:14px;font-weight:600">Mayores FMV</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">División de Honor</div>
           </div>
           <div class="canal-btn" id="canal-manual" onclick="setCanal('manual')">
             <div style="font-size:22px;margin-bottom:6px">🎮</div>
             <div style="font-size:14px;font-weight:600">Manual</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">Sin API</div>
           </div>
         </div>
       </div>
@@ -352,8 +330,8 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         <div class="btn-row">
           <button class="btn accent" onclick="buscarInferiores()">Buscar partidos</button>
         </div>
-        <div id="inf-team-filter" style="display:none;margin-top:12px;margin-bottom:4px">
-          <input type="text" id="inf-team-input" class="input-dark" placeholder="Filtrar por equipo..." oninput="filtrarEquipoInferiores()" style="width:100%">
+        <div id="inf-team-filter" style="display:none;margin-bottom:12px">
+          <input type="text" id="inf-team-input" placeholder="Filtrar por equipo..." oninput="filtrarEquipoInferiores()" style="width:100%">
         </div>
         <div id="inf-results" style="margin-top:16px"></div>
 
@@ -471,7 +449,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
     <div class="tab-panel" id="tab-equipos">
       <div class="card">
         <div class="card-title">Equipos guardados</div>
-        <input type="text" id="team-search" class="input-dark" placeholder="Buscar equipo..." oninput="filterTeamList()" style="margin-bottom:12px;width:100%">
+        <input type="text" id="team-search" placeholder="Buscar equipo..." oninput="filterTeamList()" style="margin-bottom:12px;width:100%">
         <div class="team-list" id="team-list"><div style="color:var(--text3);font-size:13px">Cargando...</div></div>
         <div class="btn-row"><button class="btn accent" onclick="showTeamForm()">+ Nuevo equipo</button></div>
       </div>
@@ -749,7 +727,11 @@ async function initApp() {
       document.querySelectorAll('.nav-item').forEach(n => {
         if (n.getAttribute('onclick')?.includes(`'${savedTab}'`)) n.classList.add('active');
       });
-      if (savedTab === 'partido') { renderPartidoSeleccionado(); refreshPartidoScore(); resolveTeams(); renderManualControl(); }
+      if (savedTab === 'partido') { 
+        renderPartidoSeleccionado(); 
+        if (state.config.data_source !== 'manual') { refreshPartidoScore(); resolveTeams(); }
+        renderManualControl(); 
+      }
       if (savedTab === 'posicion') { setTimeout(updatePreview, 200); }
       if (savedTab === 'overlays') refreshOverlayPreview();
     }
@@ -803,7 +785,13 @@ function switchTab(tab) {
   try { localStorage.setItem('activeTab', tab); } catch(e) {}
   if (tab === 'posicion') { updatePreview(); }
   if (tab === 'overlays') refreshOverlayPreview();
-  if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) { refreshPartidoScore(); resolveTeams(); renderManualControl(); } }
+  if (tab === 'partido') { 
+    renderPartidoSeleccionado(); 
+    if (state.appReady) { 
+      if (state.config.data_source !== 'manual') { refreshPartidoScore(); resolveTeams(); }
+      renderManualControl(); 
+    } 
+  }
 }
 
 // ── CONEXIÓN TAB ──────────────────────────────────────────────
@@ -1005,6 +993,8 @@ async function aplicarPartido(matchId, source, matchData) {
 
   showToast('Partido aplicado ✓', 'success');
   renderPartidoSeleccionado();
+  const resolverCard = document.getElementById('team-resolver')?.closest('.card');
+  if (resolverCard) resolverCard.style.display = 'block';
   resolveTeams();
   renderManualControl();
   checkConnection();
@@ -1243,9 +1233,16 @@ function renderConfig() {
 // ── TEAM RESOLVER ─────────────────────────────────────────────
 
 async function resolveTeams() {
-  const info = state.partidoInfo;
-  const el   = document.getElementById('team-resolver');
+  const el = document.getElementById('team-resolver');
+  const card = el?.closest('.card');
   if (!el) return;
+
+  // En modo manual ocultar esta sección — los equipos ya están en el control
+  if (state.config.data_source === 'manual') {
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = 'block';
   if (!info?._id) {
     el.innerHTML = '<div style="color:var(--text3);font-size:13px">Aplicá un partido para ver los equipos sugeridos.</div>';
     return;
