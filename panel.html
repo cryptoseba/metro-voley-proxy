@@ -219,7 +219,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.7</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v3.8</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -246,7 +246,7 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
       <!-- Selector canal -->
       <div class="card">
         <div class="card-title">Canal de transmisión</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
           <div class="canal-btn active" id="canal-inferiores" onclick="setCanal('inferiores')">
             <div style="font-size:22px;margin-bottom:6px">🔵</div>
             <div style="font-size:14px;font-weight:600">Inferiores FMV</div>
@@ -257,10 +257,35 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
             <div style="font-size:14px;font-weight:600">Mayores FMV</div>
             <div style="font-size:11px;color:var(--text2);margin-top:3px">División de Honor</div>
           </div>
+          <div class="canal-btn" id="canal-manual" onclick="setCanal('manual')">
+            <div style="font-size:22px;margin-bottom:6px">🎮</div>
+            <div style="font-size:14px;font-weight:600">Manual</div>
+            <div style="font-size:11px;color:var(--text2);margin-top:3px">Sin API</div>
+          </div>
         </div>
       </div>
 
-      <!-- Filtros Inferiores -->
+      <!-- Filtros Manual -->
+      <div class="card" id="filtros-manual" style="display:none">
+        <div class="card-title">Configurar partido manual</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Equipo Local</label>
+            <select id="manual-home-team">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Equipo Visitante</label>
+            <select id="manual-away-team">
+              <option value="">Seleccionar...</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn accent" onclick="aplicarManualMode()">Aplicar y controlar</button>
+        </div>
+      </div>
       <div class="card" id="filtros-inferiores">
         <div class="card-title">Buscar partido</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
@@ -371,6 +396,41 @@ body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-s
         <div class="card-title">Presentación en el overlay</div>
         <div id="team-resolver">
           <div style="color:var(--text3);font-size:13px">Aplicá un partido para ver los equipos sugeridos.</div>
+        </div>
+      </div>
+
+      <!-- Control Manual -->
+      <div class="card" id="manual-control-card" style="display:none">
+        <div class="card-title">🎮 Control manual</div>
+        <div id="manual-scoreboard" style="display:flex;align-items:center;justify-content:center;gap:20px;padding:16px 0;margin-bottom:16px">
+          <div style="text-align:center">
+            <div id="mc-home-name" style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">LOCAL</div>
+            <div id="mc-home-score" style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:var(--text1);line-height:1">0</div>
+            <div id="mc-home-sets" style="font-size:13px;color:var(--text3)">Sets: 0</div>
+          </div>
+          <div style="text-align:center;padding:0 8px">
+            <div id="mc-set-label" style="font-size:12px;color:var(--text3)">Set 1</div>
+          </div>
+          <div style="text-align:center">
+            <div id="mc-away-name" style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">VISITANTE</div>
+            <div id="mc-away-score" style="font-family:'Bebas Neue',sans-serif;font-size:56px;color:var(--text1);line-height:1">0</div>
+            <div id="mc-away-sets" style="font-size:13px;color:var(--text3)">Sets: 0</div>
+          </div>
+        </div>
+
+        <!-- Botones de punto -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <button class="btn accent" style="font-size:18px;padding:16px" onclick="manualPoint('home')">+1 LOCAL</button>
+          <button class="btn accent" style="font-size:18px;padding:16px" onclick="manualPoint('away')">+1 VISITANTE</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <button class="btn" onclick="manualUndo('home')">↩ Quitar LOCAL</button>
+          <button class="btn" onclick="manualUndo('away')">↩ Quitar VISITANTE</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <button class="btn" onclick="manualEndSet()">🏁 Fin de set</button>
+          <button class="btn" onclick="manualEndMatch()">🏆 Fin de partido</button>
+          <button class="btn" style="color:var(--error)" onclick="manualReset()">↺ Reset</button>
         </div>
       </div>
 
@@ -703,7 +763,7 @@ function switchTab(tab) {
   try { localStorage.setItem('activeTab', tab); } catch(e) {}
   if (tab === 'posicion') { updatePreview(); }
   if (tab === 'overlays') refreshOverlayPreview();
-  if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) { refreshPartidoScore(); resolveTeams(); } }
+  if (tab === 'partido') { renderPartidoSeleccionado(); if (state.appReady) { refreshPartidoScore(); resolveTeams(); renderManualControl(); } }
 }
 
 // ── CONEXIÓN TAB ──────────────────────────────────────────────
@@ -712,12 +772,15 @@ let partidoSeleccionado = null;
 
 function setCanal(canal) {
   canalActual = canal;
-  document.getElementById('canal-inferiores').classList.toggle('active', canal === 'inferiores');
-  document.getElementById('canal-mayores').classList.toggle('active', canal === 'mayores');
+  ['inferiores','mayores','manual'].forEach(c => {
+    document.getElementById('canal-'+c)?.classList.toggle('active', c === canal);
+  });
   document.getElementById('filtros-inferiores').style.display = canal === 'inferiores' ? 'block' : 'none';
-  document.getElementById('filtros-mayores').style.display   = canal === 'mayores'   ? 'block' : 'none';
+  document.getElementById('filtros-mayores').style.display   = canal === 'mayores'    ? 'block' : 'none';
+  document.getElementById('filtros-manual').style.display    = canal === 'manual'     ? 'block' : 'none';
   document.getElementById('inf-results').innerHTML = '';
   document.getElementById('may-results').innerHTML = '';
+  if (canal === 'manual') renderManualTeamSelects();
 }
 
 async function buscarInferiores() {
@@ -1320,6 +1383,111 @@ function filterTeamList() {
       <button class="team-delete" onclick="event.stopPropagation();deleteTeam('${t.id}')">×</button>
       <button class="btn sm" style="margin-top:8px;width:100%" onclick="event.stopPropagation();editTeam('${t.id}')">Editar</button>
     </div>`).join('');
+}
+
+// ── MODO MANUAL ───────────────────────────────────────────────
+let manualState = { home_points:0, away_points:0, home_sets:0, away_sets:0, current_set:1, status:'live' };
+
+function renderManualTeamSelects() {
+  const opts = '<option value="">Seleccionar...</option>' +
+    state.teams.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+  const h = document.getElementById('manual-home-team');
+  const a = document.getElementById('manual-away-team');
+  if (h) h.innerHTML = opts;
+  if (a) a.innerHTML = opts;
+}
+
+async function aplicarManualMode() {
+  const homeId = document.getElementById('manual-home-team')?.value;
+  const awayId = document.getElementById('manual-away-team')?.value;
+  if (!homeId || !awayId) { showToast('Seleccioná ambos equipos', 'error'); return; }
+
+  // Reset del marcador
+  manualState = { home_points:0, away_points:0, home_sets:0, away_sets:0, current_set:1, status:'live' };
+  await sb('manual_score','PATCH', manualState, '?id=eq.1');
+
+  // Guardar en overlay_config con data_source = manual
+  const cfg = {
+    home_team_id: homeId,
+    away_team_id: awayId,
+    data_source: 'manual',
+    match_id: 0,
+    updated_at: new Date().toISOString()
+  };
+  await sb('overlay_config','PATCH', cfg, '?id=eq.1');
+  state.config = { ...state.config, ...cfg };
+
+  showToast('Modo manual activado', 'success');
+
+  // Pasar al tab Partido
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-partido').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if(n.getAttribute('onclick')?.includes("'partido'")) n.classList.add('active'); });
+  localStorage.setItem('activeTab','partido');
+
+  renderManualControl();
+  resolveTeams();
+}
+
+function renderManualControl() {
+  const isManual = state.config.data_source === 'manual';
+  const card = document.getElementById('manual-control-card');
+  if (!card) return;
+  card.style.display = isManual ? 'block' : 'none';
+  if (!isManual) return;
+
+  const home = state.teams.find(t => t.id === state.config.home_team_id);
+  const away = state.teams.find(t => t.id === state.config.away_team_id);
+  document.getElementById('mc-home-name').textContent = home?.name || 'LOCAL';
+  document.getElementById('mc-away-name').textContent = away?.name || 'VISITANTE';
+  updateManualDisplay();
+}
+
+function updateManualDisplay() {
+  document.getElementById('mc-home-score').textContent = manualState.home_points;
+  document.getElementById('mc-away-score').textContent = manualState.away_points;
+  document.getElementById('mc-home-sets').textContent  = `Sets: ${manualState.home_sets}`;
+  document.getElementById('mc-away-sets').textContent  = `Sets: ${manualState.away_sets}`;
+  document.getElementById('mc-set-label').textContent  = manualState.status === 'finished' ? '🏆 Fin' : `Set ${manualState.current_set}`;
+}
+
+async function manualSave() {
+  manualState.updated_at = new Date().toISOString();
+  await sb('manual_score','PATCH', manualState, '?id=eq.1');
+  updateManualDisplay();
+}
+
+async function manualPoint(side) {
+  if (manualState.status === 'finished') return;
+  if (side === 'home') manualState.home_points++;
+  else                 manualState.away_points++;
+  await manualSave();
+}
+
+async function manualUndo(side) {
+  if (side === 'home' && manualState.home_points > 0) manualState.home_points--;
+  if (side === 'away' && manualState.away_points > 0) manualState.away_points--;
+  await manualSave();
+}
+
+async function manualEndSet() {
+  if (manualState.home_points > manualState.away_points) manualState.home_sets++;
+  else manualState.away_sets++;
+  manualState.home_points = 0;
+  manualState.away_points = 0;
+  manualState.current_set++;
+  await manualSave();
+}
+
+async function manualEndMatch() {
+  manualState.status = 'finished';
+  await manualSave();
+}
+
+async function manualReset() {
+  manualState = { home_points:0, away_points:0, home_sets:0, away_sets:0, current_set:1, status:'live' };
+  await manualSave();
 }
 
 async function saveConfig() {
