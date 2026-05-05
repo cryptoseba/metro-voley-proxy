@@ -251,7 +251,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.5</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.6</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1310,8 +1310,13 @@ async function resolveTeams() {
       ${renderResolverSlot('away', 'Visitante', state._resolverAway)}
     </div>
     <div class="btn-row" style="margin-top:16px">
-      <button class="btn accent" onclick="applyResolverConfig()">Guardar y aplicar</button>
+      <button class="btn accent" id="resolver-save-btn" onclick="applyResolverConfig()">Guardar y aplicar</button>
     </div>`;
+
+  // Si ya hay equipos aplicados, mostrar como guardado
+  if (state.config.home_team_id || state.config.away_team_id || state.config.home_raw_name) {
+    setTimeout(markResolverSaved, 0);
+  }
 }
 
 function renderResolverSlot(side, label, resolved) {
@@ -1381,6 +1386,7 @@ function toggleResolverEdit(side) {
   if (!el) return;
   const isOpen = el.style.display !== 'none';
   el.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) markResolverDirty();
 }
 
 function updateResolverBar(side) {
@@ -1392,6 +1398,7 @@ function updateResolverBar(side) {
     const barEl = slot.querySelector('div[style*="border-radius:3px"]');
     if (barEl) barEl.style.background = `linear-gradient(to right,${s1},${s2},${s3})`;
   }
+  markResolverDirty();
 }
 
 async function saveResolverTeam(side, rawName) {
@@ -1429,6 +1436,25 @@ async function saveResolverTeam(side, rawName) {
   resolveTeams();
 }
 
+function markResolverDirty() {
+  const btn = document.getElementById('resolver-save-btn');
+  if (!btn) return;
+  btn.textContent = 'Guardar y aplicar';
+  btn.classList.remove('saved');
+  btn.style.background = '';
+  btn.style.opacity = '';
+  btn.disabled = false;
+}
+
+function markResolverSaved() {
+  const btn = document.getElementById('resolver-save-btn');
+  if (!btn) return;
+  btn.textContent = '✓ Aplicado';
+  btn.style.background = 'var(--surface2)';
+  btn.style.opacity = '0.7';
+  btn.disabled = false; // dejamos clickeable por si quiere re-aplicar
+}
+
 async function applyResolverConfig() {
   const home = state._resolverHome;
   const away = state._resolverAway;
@@ -1444,6 +1470,7 @@ async function applyResolverConfig() {
   await sb('overlay_config','PATCH',cfg,'?id=eq.1');
   state.config = { ...state.config, ...cfg };
   showToast('Configuración guardada', 'success');
+  markResolverSaved();
   checkConnection();
 }
 
