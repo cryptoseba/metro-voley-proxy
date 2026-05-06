@@ -61,7 +61,7 @@ def parse_match_block(block, division_name):
     if scheduled_at:
         try:
             match_date = datetime.fromisoformat(scheduled_at).date()
-            today = datetime.now().date()
+            today = (datetime.utcnow() - timedelta(hours=3)).date()
             if match_date < today or match_date > today + timedelta(days=20):
                 return None
         except:
@@ -73,8 +73,9 @@ def parse_match_block(block, division_name):
         status_id = 2
     elif scheduled_at:
         try:
-            if datetime.fromisoformat(scheduled_at) < datetime.now():
-                status_id = 2
+            now_ar = datetime.utcnow() - timedelta(hours=3)
+            if datetime.fromisoformat(scheduled_at) < now_ar:
+                status_id = 3  # en juego o pasado sin score
         except:
             pass
 
