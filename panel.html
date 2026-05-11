@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.2</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.3</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1308,8 +1308,12 @@ async function resolveTeams() {
   // Buscar aliases guardados
   let aliases = [];
   try {
-    const encoded = [homeName, awayName].map(n => `"${n}"`).join(',');
-    aliases = await sbQuery('team_aliases', `?raw_name=in.(${encodeURIComponent(encoded)})&select=raw_name,team_id,teams(id,name,color_primary,color_stripe_1,color_stripe_2,color_stripe_3)`);
+    // Buscar cada nombre por separado para evitar problemas con comillas en los nombres
+    const results = await Promise.all([homeName, awayName].map(name =>
+      sbQuery('team_aliases', `?raw_name=eq.${encodeURIComponent(name)}&select=raw_name,team_id,teams(id,name,color_primary,color_stripe_1,color_stripe_2,color_stripe_3)`)
+        .catch(() => [])
+    ));
+    aliases = results.flat().filter(Boolean);
   } catch(e) {}
 
   const resolve = (rawName, configTeamId) => {
