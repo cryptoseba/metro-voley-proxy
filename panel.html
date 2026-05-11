@@ -91,8 +91,22 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 }
 .input-dark:focus { border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(255,92,26,0.12) !important; }
 
-.color-input-wrap { display:flex; gap:8px; align-items:center; }
-.color-input-wrap input[type="color"] { width:36px; height:36px; padding:2px; border-radius:6px; cursor:pointer; flex-shrink:0; border:1px solid var(--border); background:var(--surface2); }
+.color-input-wrap { display:flex; gap:8px; align-items:center; position:relative; }
+.color-swatch { width:36px; height:36px; border-radius:6px; cursor:pointer; flex-shrink:0; border:2px solid var(--border); transition:border-color 0.2s; }
+.color-swatch:hover { border-color:var(--accent); }
+.color-picker-popup {
+  display:none; position:absolute; top:44px; left:0; z-index:999;
+  background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:12px; box-shadow:0 8px 24px rgba(0,0,0,0.4); width:220px;
+}
+.color-picker-popup.open { display:block; }
+.color-presets { display:grid; grid-template-columns:repeat(8,1fr); gap:6px; margin-bottom:10px; }
+.color-preset { width:100%; aspect-ratio:1; border-radius:4px; cursor:pointer; border:2px solid transparent; transition:border-color 0.15s, transform 0.15s; }
+.color-preset:hover { border-color:white; transform:scale(1.15); }
+.color-preset.selected { border-color:white; }
+.color-hex-row { display:flex; gap:8px; align-items:center; }
+.color-hex-row input { flex:1; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:7px 10px; color:var(--text); font-family:monospace; font-size:13px; outline:none; }
+.color-hex-row input:focus { border-color:var(--accent); }
 .color-input-wrap input[type="text"] { flex:1; }
 
 /* BUTTONS */
@@ -251,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.7</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.9</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -489,17 +503,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
         <div class="form-row">
           <div class="form-group">
             <label>Color principal</label>
-            <div class="color-input-wrap">
-              <input type="color" id="team-color-primary" value="#FF5C1A" oninput="syncColor('team-color-primary','team-color-primary-text')">
-              <input type="text" id="team-color-primary-text" value="#FF5C1A" oninput="syncColorText('team-color-primary','team-color-primary-text')">
-            </div>
+            <div class="color-input-wrap" id="wrap-team-color-primary"></div>
           </div>
         </div>
         <div class="card-title" style="margin-top:8px">Barra del marcador (3 segmentos)</div>
         <div class="form-row triple">
-          <div class="form-group"><label>Seg. 1</label><div class="color-input-wrap"><input type="color" id="team-s1" value="#FF5C1A" oninput="syncColor('team-s1','team-s1-text')"><input type="text" id="team-s1-text" value="#FF5C1A" oninput="syncColorText('team-s1','team-s1-text')"></div></div>
-          <div class="form-group"><label>Seg. 2</label><div class="color-input-wrap"><input type="color" id="team-s2" value="#FF5C1A" oninput="syncColor('team-s2','team-s2-text')"><input type="text" id="team-s2-text" value="#FF5C1A" oninput="syncColorText('team-s2','team-s2-text')"></div></div>
-          <div class="form-group"><label>Seg. 3</label><div class="color-input-wrap"><input type="color" id="team-s3" value="#FF5C1A" oninput="syncColor('team-s3','team-s3-text')"><input type="text" id="team-s3-text" value="#FF5C1A" oninput="syncColorText('team-s3','team-s3-text')"></div></div>
+          <div class="form-group"><label>Seg. 1</label><div class="color-input-wrap" id="wrap-team-s1"></div></div>
+          <div class="form-group"><label>Seg. 2</label><div class="color-input-wrap" id="wrap-team-s2"></div></div>
+          <div class="form-group"><label>Seg. 3</label><div class="color-input-wrap" id="wrap-team-s3"></div></div>
         </div>
         <div class="btn-row">
           <button class="btn accent" onclick="saveTeam()">Guardar equipo</button>
@@ -1344,7 +1355,7 @@ function renderResolverSlot(side, label, resolved) {
     ${t ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;overflow-wrap:break-word">${rawName}</div>` : ''}
     <div style="height:5px;border-radius:3px;background:${bar};margin-bottom:8px" id="resolver-bar-${side}"></div>
     <div style="margin-bottom:10px">${badge}</div>
-    <button class="btn sm" style="width:100%" onclick="toggleResolverEdit('${side}')">✏️ Personalizar</button>
+    <button class="btn sm" style="width:100%" onclick="toggleResolverEdit('${side}')">${resolved.aliased ? '✏️ Editar' : '✏️ Personalizar'}</button>
 
     <div id="resolver-edit-${side}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
       <div class="form-group" style="margin-bottom:10px">
@@ -1353,33 +1364,21 @@ function renderResolverSlot(side, label, resolved) {
       </div>
       <div class="form-group" style="margin-bottom:10px">
         <label>Color principal</label>
-        <div class="color-input-wrap">
-          <input type="color" id="resolver-cp-${side}" value="${cp}" oninput="syncColor('resolver-cp-${side}','resolver-cp-${side}-text');updateResolverBar('${side}')">
-          <input type="text"  id="resolver-cp-${side}-text" value="${cp}" oninput="syncColorText('resolver-cp-${side}','resolver-cp-${side}-text');updateResolverBar('${side}')">
-        </div>
+        <div class="color-input-wrap" id="wrap-resolver-cp-${side}"></div>
       </div>
       <div style="font-size:11px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Barra del marcador</div>
       <div class="form-row triple" style="margin-bottom:12px">
         <div class="form-group">
           <label>Seg. 1</label>
-          <div class="color-input-wrap">
-            <input type="color" id="resolver-s1-${side}" value="${s1}" oninput="syncColor('resolver-s1-${side}','resolver-s1-${side}-text');updateResolverBar('${side}')">
-            <input type="text"  id="resolver-s1-${side}-text" value="${s1}" oninput="syncColorText('resolver-s1-${side}','resolver-s1-${side}-text');updateResolverBar('${side}')">
-          </div>
+          <div class="color-input-wrap" id="wrap-resolver-s1-${side}"></div>
         </div>
         <div class="form-group">
           <label>Seg. 2</label>
-          <div class="color-input-wrap">
-            <input type="color" id="resolver-s2-${side}" value="${s2}" oninput="syncColor('resolver-s2-${side}','resolver-s2-${side}-text');updateResolverBar('${side}')">
-            <input type="text"  id="resolver-s2-${side}-text" value="${s2}" oninput="syncColorText('resolver-s2-${side}','resolver-s2-${side}-text');updateResolverBar('${side}')">
-          </div>
+          <div class="color-input-wrap" id="wrap-resolver-s2-${side}"></div>
         </div>
         <div class="form-group">
           <label>Seg. 3</label>
-          <div class="color-input-wrap">
-            <input type="color" id="resolver-s3-${side}" value="${s3}" oninput="syncColor('resolver-s3-${side}','resolver-s3-${side}-text');updateResolverBar('${side}')">
-            <input type="text"  id="resolver-s3-${side}-text" value="${s3}" oninput="syncColorText('resolver-s3-${side}','resolver-s3-${side}-text');updateResolverBar('${side}')">
-          </div>
+          <div class="color-input-wrap" id="wrap-resolver-s3-${side}"></div>
         </div>
       </div>
       <button class="btn accent sm" style="width:100%" onclick="saveResolverTeam('${side}','${rawName.replace(/'/g,"\\'")}')">Guardar</button>
@@ -1392,47 +1391,66 @@ function toggleResolverEdit(side) {
   if (!el) return;
   const isOpen = el.style.display !== 'none';
   el.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) markResolverDirty();
+  if (!isOpen) {
+    markResolverDirty();
+    // Inicializar color pickers con los valores actuales
+    const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
+    const t = resolved?.team;
+    const cp = t?.color_primary  || '#FF5C1A';
+    const s1 = t?.color_stripe_1 || '#FF5C1A';
+    const s2 = t?.color_stripe_2 || '#FF5C1A';
+    const s3 = t?.color_stripe_3 || '#FF5C1A';
+    setTimeout(() => {
+      initColorPicker(`resolver-cp-${side}`, cp, () => updateResolverBar(side));
+      initColorPicker(`resolver-s1-${side}`, s1, () => updateResolverBar(side));
+      initColorPicker(`resolver-s2-${side}`, s2, () => updateResolverBar(side));
+      initColorPicker(`resolver-s3-${side}`, s3, () => updateResolverBar(side));
+    }, 0);
+  }
 }
 
 function updateResolverBar(side) {
-  const s1 = document.getElementById(`resolver-s1-${side}-text`)?.value || '#FF5C1A';
-  const s2 = document.getElementById(`resolver-s2-${side}-text`)?.value || '#FF5C1A';
-  const s3 = document.getElementById(`resolver-s3-${side}-text`)?.value || '#FF5C1A';
-  const slot = document.getElementById(`resolver-edit-${side}`)?.closest('div[style*="surface2"]');
-  if (slot) {
-    const barEl = slot.querySelector('div[style*="border-radius:3px"]');
-    if (barEl) barEl.style.background = `linear-gradient(to right,${s1},${s2},${s3})`;
-  }
+  const s1 = getColorPickerValue(`resolver-s1-${side}`);
+  const s2 = getColorPickerValue(`resolver-s2-${side}`);
+  const s3 = getColorPickerValue(`resolver-s3-${side}`);
+  const barEl = document.getElementById(`resolver-bar-${side}`);
+  if (barEl) barEl.style.background = `linear-gradient(to right,${s1},${s2},${s3})`;
   markResolverDirty();
 }
 
 async function saveResolverTeam(side, rawName) {
   const alias = document.getElementById(`resolver-alias-${side}`)?.value.trim().toUpperCase();
-  const cp    = document.getElementById(`resolver-cp-${side}-text`)?.value || '#FF5C1A';
-  const s1    = document.getElementById(`resolver-s1-${side}-text`)?.value || '#FF5C1A';
-  const s2    = document.getElementById(`resolver-s2-${side}-text`)?.value || '#FF5C1A';
-  const s3    = document.getElementById(`resolver-s3-${side}-text`)?.value || '#FF5C1A';
+  const cp    = getColorPickerValue(`resolver-cp-${side}`);
+  const s1    = getColorPickerValue(`resolver-s1-${side}`);
+  const s2    = getColorPickerValue(`resolver-s2-${side}`);
+  const s3    = getColorPickerValue(`resolver-s3-${side}`);
   if (!alias) { showToast('Ingresá un nombre para el equipo', 'error'); return; }
 
-  // Buscar si ya existe un equipo con ese nombre
-  let team = state.teams.find(t => t.name === alias);
-  if (team) {
-    // Actualizar colores
-    await sb('teams','PATCH',{ color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },`?id=eq.${team.id}`);
-    team = { ...team, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 };
+  const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
+  let team = resolved?.team; // usar equipo ya asignado si existe
+
+  if (team?.id) {
+    // Actualizar equipo existente — nombre + colores
+    await sb('teams','PATCH',{ name: alias, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },`?id=eq.${team.id}`);
+    team = { ...team, name: alias, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 };
     state.teams = state.teams.map(t => t.id === team.id ? team : t);
   } else {
-    // Crear equipo nuevo
-    const res = await sb('teams','POST',{ name: alias, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },'');
-    team = Array.isArray(res) ? res[0] : res;
-    if (team?.id) state.teams.push(team);
+    // Buscar por nombre exacto o crear nuevo
+    team = state.teams.find(t => t.name === alias);
+    if (team) {
+      await sb('teams','PATCH',{ color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },`?id=eq.${team.id}`);
+      team = { ...team, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 };
+      state.teams = state.teams.map(t => t.id === team.id ? team : t);
+    } else {
+      const res = await sb('teams','POST',{ name: alias, color_primary: cp, color_stripe_1: s1, color_stripe_2: s2, color_stripe_3: s3 },'');
+      team = Array.isArray(res) ? res[0] : res;
+      if (team?.id) state.teams.push(team);
+    }
   }
 
   // Guardar alias
   if (team?.id) {
     await sb('team_aliases','POST',{ raw_name: rawName, team_id: team.id },'?on_conflict=raw_name');
-    // Actualizar resolver state
     if (side === 'home') state._resolverHome = { rawName, team, aliased: true };
     else                 state._resolverAway = { rawName, team, aliased: true };
   }
@@ -1694,12 +1712,12 @@ function showTeamForm(id) {
   document.getElementById('team-form-card').style.display = 'block';
   document.getElementById('team-form-title').textContent = id ? 'Editar equipo' : 'Nuevo equipo';
   document.getElementById('team-edit-id').value = id || '';
+  const defaultColor = '#FF5C1A';
   if (!id) {
     document.getElementById('team-name').value = '';
-    ['team-color-primary','team-s1','team-s2','team-s3'].forEach(i => {
-      document.getElementById(i).value = '#FF5C1A';
-      const t = document.getElementById(i+'-text'); if(t) t.value = '#FF5C1A';
-    });
+    ['team-color-primary','team-s1','team-s2','team-s3'].forEach(i => initColorPicker(i, defaultColor));
+  } else {
+    // editTeam se encarga de los colores
   }
 }
 function hideTeamForm() { document.getElementById('team-form-card').style.display = 'none'; }
@@ -1709,24 +1727,24 @@ function editTeam(id) {
   if (!t) return;
   showTeamForm(id);
   document.getElementById('team-name').value = t.name;
-  setColorField('team-color-primary', t.color_primary);
-  setColorField('team-s1', t.color_stripe_1);
-  setColorField('team-s2', t.color_stripe_2);
-  setColorField('team-s3', t.color_stripe_3);
+  initColorPicker('team-color-primary', t.color_primary || '#FF5C1A');
+  initColorPicker('team-s1', t.color_stripe_1 || '#FF5C1A');
+  initColorPicker('team-s2', t.color_stripe_2 || '#FF5C1A');
+  initColorPicker('team-s3', t.color_stripe_3 || '#FF5C1A');
 }
+
 function setColorField(id, val) {
-  document.getElementById(id).value = val;
-  const t = document.getElementById(id+'-text'); if(t) t.value = val;
+  initColorPicker(id, val || '#FF5C1A');
 }
 
 async function saveTeam() {
   const id   = document.getElementById('team-edit-id').value;
   const data = {
     name:            document.getElementById('team-name').value.trim().toUpperCase(),
-    color_primary:   document.getElementById('team-color-primary').value,
-    color_stripe_1:  document.getElementById('team-s1').value,
-    color_stripe_2:  document.getElementById('team-s2').value,
-    color_stripe_3:  document.getElementById('team-s3').value,
+    color_primary:   getColorPickerValue('team-color-primary'),
+    color_stripe_1:  getColorPickerValue('team-s1'),
+    color_stripe_2:  getColorPickerValue('team-s2'),
+    color_stripe_3:  getColorPickerValue('team-s3'),
   };
   if (!data.name) { showToast('Ingresá un nombre','error'); return; }
   if (id) await sb('teams','PATCH',data,`?id=eq.${id}`);
@@ -1832,8 +1850,144 @@ async function deletePlayer(id, teamId) {
   renderPlayersList(players, teamId);
   showToast('Jugadora eliminada');
 }
-function syncColor(colorId, textId) { const v = document.getElementById(colorId).value; document.getElementById(textId).value = v; }
-function syncColorText(colorId, textId) { const v = document.getElementById(textId).value; if(/^#[0-9a-fA-F]{6}$/.test(v)) document.getElementById(colorId).value = v; }
+const COLOR_PRESETS = [
+  '#FF5C1A','#FF0000','#CC0000','#FF6600',
+  '#FFCC00','#FFD700','#00CC44','#008800',
+  '#00AAFF','#0055CC','#0000CC','#6600CC',
+  '#CC00CC','#FF69B4','#FFFFFF','#CCCCCC',
+  '#888888','#444444','#222222','#000000',
+  '#FF3366','#00CCCC','#FF9900','#336699',
+];
+
+function buildColorPicker(inputId, onchange) {
+  const wrap = document.createElement('div');
+  wrap.className = 'color-input-wrap';
+
+  const swatch = document.createElement('div');
+  swatch.className = 'color-swatch';
+  swatch.id = inputId + '-swatch';
+
+  const popup = document.createElement('div');
+  popup.className = 'color-picker-popup';
+  popup.id = inputId + '-popup';
+
+  const presets = document.createElement('div');
+  presets.className = 'color-presets';
+  COLOR_PRESETS.forEach(c => {
+    const dot = document.createElement('div');
+    dot.className = 'color-preset';
+    dot.style.background = c;
+    dot.title = c;
+    dot.onclick = () => setColorPickerValue(inputId, c, onchange);
+    presets.appendChild(dot);
+  });
+
+  const hexRow = document.createElement('div');
+  hexRow.className = 'color-hex-row';
+  const hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.id = inputId + '-text';
+  hexInput.placeholder = '#FF5C1A';
+  hexInput.maxLength = 7;
+  hexInput.oninput = () => {
+    const v = hexInput.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColorPickerValue(inputId, v, onchange);
+  };
+  hexRow.appendChild(hexInput);
+
+  popup.appendChild(presets);
+  popup.appendChild(hexRow);
+  wrap.appendChild(swatch);
+  wrap.appendChild(popup);
+
+  // Toggle popup
+  swatch.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.color-picker-popup.open').forEach(p => { if(p !== popup) p.classList.remove('open'); });
+    popup.classList.toggle('open');
+  };
+  document.addEventListener('click', () => popup.classList.remove('open'));
+
+  return wrap;
+}
+
+function setColorPickerValue(inputId, color, onchange) {
+  const swatch = document.getElementById(inputId + '-swatch');
+  const hexInput = document.getElementById(inputId + '-text');
+  if (swatch) swatch.style.background = color;
+  if (hexInput) hexInput.value = color;
+  // Marcar preset seleccionado
+  const popup = document.getElementById(inputId + '-popup');
+  if (popup) popup.querySelectorAll('.color-preset').forEach(d => {
+    d.classList.toggle('selected', d.title === color);
+  });
+  if (onchange) onchange(color);
+}
+
+function getColorPickerValue(inputId) {
+  return document.getElementById(inputId + '-text')?.value || '#FF5C1A';
+}
+
+function initColorPicker(inputId, initialValue, onchange) {
+  const wrap = document.getElementById('wrap-' + inputId) || document.getElementById(inputId)?.closest('.color-input-wrap');
+  if (!wrap) return;
+  // Limpiar y reconstruir
+  wrap.innerHTML = '';
+  const swatch = document.createElement('div');
+  swatch.className = 'color-swatch';
+  swatch.id = inputId + '-swatch';
+  swatch.style.background = initialValue || '#FF5C1A';
+
+  const popup = document.createElement('div');
+  popup.className = 'color-picker-popup';
+  popup.id = inputId + '-popup';
+
+  const presets = document.createElement('div');
+  presets.className = 'color-presets';
+  COLOR_PRESETS.forEach(c => {
+    const dot = document.createElement('div');
+    dot.className = 'color-preset' + (c === initialValue ? ' selected' : '');
+    dot.style.background = c;
+    dot.title = c;
+    dot.onclick = (e) => { e.stopPropagation(); setColorPickerValue(inputId, c, onchange); popup.classList.remove('open'); };
+    presets.appendChild(dot);
+  });
+
+  const hexRow = document.createElement('div');
+  hexRow.className = 'color-hex-row';
+  const hexInput = document.createElement('input');
+  hexInput.type = 'text';
+  hexInput.id = inputId + '-text';
+  hexInput.placeholder = '#FF5C1A';
+  hexInput.maxLength = 7;
+  hexInput.value = initialValue || '#FF5C1A';
+  hexInput.oninput = () => {
+    const v = hexInput.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) setColorPickerValue(inputId, v, onchange);
+  };
+  hexRow.appendChild(hexInput);
+  popup.appendChild(presets);
+  popup.appendChild(hexRow);
+
+  swatch.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll('.color-picker-popup.open').forEach(p => { if(p !== popup) p.classList.remove('open'); });
+    popup.classList.toggle('open');
+  };
+
+  wrap.appendChild(swatch);
+  wrap.appendChild(popup);
+}
+
+// Legacy compat
+function syncColor(colorId, textId) {
+  const v = document.getElementById(colorId + '-swatch')?.style.background || document.getElementById(textId)?.value;
+  if (v) setColorPickerValue(colorId, v, null);
+}
+function syncColorText(colorId, textId) {
+  const v = document.getElementById(textId)?.value;
+  if (v && /^#[0-9a-fA-F]{6}$/.test(v)) setColorPickerValue(colorId, v, null);
+}
 
 // ── POSICIÓN / PREVIEW MARCADOR ───────────────────────────────
 function initPreview() {
