@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.0</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.1</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1323,15 +1323,15 @@ async function resolveTeams() {
   el.innerHTML = `
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Confirmá cómo se van a ver los equipos en el overlay. Si no personalizás, se usan los colores y nombre por defecto.</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      ${renderResolverSlot('home', 'Local', state._resolverHome)}
-      ${renderResolverSlot('away', 'Visitante', state._resolverAway)}
+      <div id="resolver-slot-home">${renderResolverSlot('home', 'Local', state._resolverHome)}</div>
+      <div id="resolver-slot-away">${renderResolverSlot('away', 'Visitante', state._resolverAway)}</div>
     </div>
     <div class="btn-row" style="margin-top:16px">
       <button class="btn accent" id="resolver-save-btn" onclick="applyResolverConfig()">Guardar y aplicar</button>
     </div>`;
 
-  // Si ya hay equipos aplicados, mostrar como guardado
-  if (state.config.home_team_id || state.config.away_team_id || state.config.home_raw_name) {
+  // Si ya hay equipos aplicados al overlay, mostrar como guardado
+  if (state.config.home_team_id && state.config.away_team_id) {
     setTimeout(markResolverSaved, 0);
   }
 }
@@ -1457,8 +1457,20 @@ async function saveResolverTeam(side, rawName) {
   }
 
   showToast('Equipo guardado ✓', 'success');
-  await loadAll();
-  resolveTeams();
+  // Recargar equipos para tener los datos frescos
+  state.teams = await sb('teams','GET',null,'?order=name') || [];
+  // Re-renderizar solo este slot sin tocar el botón "Guardar y aplicar"
+  const resolverEl = document.getElementById('team-resolver');
+  if (resolverEl) {
+    const slotId = `resolver-slot-${side}`;
+    const slotEl = document.getElementById(slotId);
+    if (slotEl) {
+      const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
+      slotEl.outerHTML = `<div id="${slotId}">${renderResolverSlot(side, side === 'home' ? 'Local' : 'Visitante', resolved)}</div>`;
+    }
+  }
+  // Marcar el botón principal como pendiente de aplicar
+  markResolverDirty();
 }
 
 function markResolverDirty() {
