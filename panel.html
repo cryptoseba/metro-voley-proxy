@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v5.9</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.0</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1381,7 +1381,7 @@ function renderResolverSlot(side, label, resolved) {
           <div class="color-input-wrap" id="wrap-resolver-s3-${side}"></div>
         </div>
       </div>
-      <button class="btn accent sm" style="width:100%" onclick="saveResolverTeam('${side}','${rawName.replace(/'/g,"\\'")}')">Guardar</button>
+      <button class="btn accent sm" style="width:100%" onclick="saveResolverTeam('${side}', decodeURIComponent(escape(atob('${btoa(unescape(encodeURIComponent(rawName)))}'))));return false;">Guardar</button>
     </div>
   </div>`;
 }
@@ -1419,7 +1419,8 @@ function updateResolverBar(side) {
 }
 
 async function saveResolverTeam(side, rawName) {
-  const alias = document.getElementById(`resolver-alias-${side}`)?.value.trim().toUpperCase();
+  const aliasEl = document.getElementById(`resolver-alias-${side}`);
+  const alias   = (aliasEl?.value.trim() || aliasEl?.placeholder || rawName || '').toUpperCase();
   const cp    = getColorPickerValue(`resolver-cp-${side}`);
   const s1    = getColorPickerValue(`resolver-s1-${side}`);
   const s2    = getColorPickerValue(`resolver-s2-${side}`);
