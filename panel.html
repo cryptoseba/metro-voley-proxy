@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.4</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.5</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1318,11 +1318,11 @@ async function resolveTeams() {
 
   const resolve = (rawName, configTeamId) => {
     const alias = aliases.find(a => a.raw_name === rawName);
-    if (alias?.teams) return { team: { ...alias.teams }, aliased: true };
+    if (alias?.teams) return { team: alias.teams, aliased: true };
     // Fallback: usar el equipo ya aplicado en overlay_config
     if (configTeamId) {
       const t = state.teams.find(t => t.id === configTeamId);
-      if (t) return { team: { ...t }, aliased: false };
+      if (t) return { team: t, aliased: false };
     }
     return { team: null, aliased: false };
   };
@@ -1364,13 +1364,6 @@ function renderResolverSlot(side, label, resolved) {
     <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;overflow-wrap:break-word;line-height:1.35">${displayName}</div>
     ${t ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;overflow-wrap:break-word">${rawName}</div>` : ''}
     <div style="height:5px;border-radius:3px;background:${bar};margin-bottom:8px" id="resolver-bar-${side}"></div>
-    <div style="margin-bottom:10px">
-      <div style="font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Asignar equipo guardado</div>
-      <select id="resolver-team-select-${side}" onchange="onResolverTeamSelect('${side}')" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;-webkit-appearance:none;appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='rgba(255,255,255,0.4)' d='M6 8L1 3h10z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
-        <option value="">Sin asignar</option>
-        ${state.teams.map(tm => `<option value="${tm.id}" ${t?.id === tm.id ? 'selected' : ''}>${tm.name}</option>`).join('')}
-      </select>
-    </div>
     <div style="margin-bottom:10px">${badge}</div>
     <button class="btn sm" style="width:100%" onclick="toggleResolverEdit('${side}')">${resolved.aliased ? '✏️ Editar' : '✏️ Personalizar'}</button>
 
@@ -1405,12 +1398,11 @@ function renderResolverSlot(side, label, resolved) {
 
 function onResolverTeamSelect(side) {
   const teamId = document.getElementById(`resolver-team-select-${side}`)?.value;
-  const team = teamId ? state.teams.find(t => t.id === teamId) : null;
-  const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
-  const newResolved = { rawName: resolved.rawName, team: team ? { ...team } : null, aliased: !!team };
+  const team = teamId ? { ...state.teams.find(t => t.id === teamId) } : null;
+  const rawName = side === 'home' ? state._resolverHome?.rawName : state._resolverAway?.rawName;
+  const newResolved = { rawName, team, aliased: !!team };
   if (side === 'home') state._resolverHome = newResolved;
   else                 state._resolverAway = newResolved;
-  // Re-renderizar el slot con los nuevos colores
   const slotEl = document.getElementById(`resolver-slot-${side}`);
   if (slotEl) {
     slotEl.outerHTML = `<div id="resolver-slot-${side}">${renderResolverSlot(side, side === 'home' ? 'Local' : 'Visitante', newResolved)}</div>`;
@@ -1484,25 +1476,25 @@ async function saveResolverTeam(side, rawName) {
   // Guardar alias
   if (team?.id) {
     await sb('team_aliases','POST',{ raw_name: rawName, team_id: team.id },'?on_conflict=raw_name');
-    // Clonar el objeto para evitar referencias compartidas entre home y away
-    if (side === 'home') state._resolverHome = { rawName, team: { ...team }, aliased: true };
-    else                 state._resolverAway = { rawName, team: { ...team }, aliased: true };
   }
 
   showToast('Equipo guardado ✓', 'success');
-  // Recargar equipos para tener los datos frescos
+  // Recargar equipos frescos de Supabase
   state.teams = await sb('teams','GET',null,'?order=name') || [];
-  // Re-renderizar solo este slot sin tocar el botón "Guardar y aplicar"
-  const resolverEl = document.getElementById('team-resolver');
-  if (resolverEl) {
-    const slotId = `resolver-slot-${side}`;
-    const slotEl = document.getElementById(slotId);
-    if (slotEl) {
-      const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
-      slotEl.outerHTML = `<div id="${slotId}">${renderResolverSlot(side, side === 'home' ? 'Local' : 'Visitante', resolved)}</div>`;
-    }
+  
+  // Actualizar resolver state con objeto fresco (clon independiente)
+  const freshTeam = state.teams.find(t => t.id === team?.id);
+  if (freshTeam) {
+    if (side === 'home') state._resolverHome = { rawName, team: { ...freshTeam }, aliased: true };
+    else                 state._resolverAway = { rawName, team: { ...freshTeam }, aliased: true };
   }
-  // Marcar el botón principal como pendiente de aplicar
+
+  // Re-renderizar solo este slot
+  const slotEl = document.getElementById(`resolver-slot-${side}`);
+  if (slotEl) {
+    const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
+    slotEl.outerHTML = `<div id="resolver-slot-${side}">${renderResolverSlot(side, side === 'home' ? 'Local' : 'Visitante', resolved)}</div>`;
+  }
   markResolverDirty();
 }
 
