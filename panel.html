@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.5</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.6</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1316,19 +1316,24 @@ async function resolveTeams() {
     aliases = results.flat().filter(Boolean);
   } catch(e) {}
 
-  const resolve = (rawName, configTeamId) => {
-    const alias = aliases.find(a => a.raw_name === rawName);
-    if (alias?.teams) return { team: alias.teams, aliased: true };
-    // Fallback: usar el equipo ya aplicado en overlay_config
-    if (configTeamId) {
-      const t = state.teams.find(t => t.id === configTeamId);
-      if (t) return { team: t, aliased: false };
-    }
-    return { team: null, aliased: false };
+  const getTeamFresh = (teamId) => {
+    if (!teamId) return null;
+    const t = state.teams.find(t => t.id === teamId);
+    return t ? { ...t } : null; // siempre clonar
   };
 
-  state._resolverHome = { rawName: homeName, ...resolve(homeName, state.config.home_team_id) };
-  state._resolverAway = { rawName: awayName, ...resolve(awayName, state.config.away_team_id) };
+  const resolve = (rawName, configTeamId) => {
+    const alias = aliases.find(a => a.raw_name === rawName);
+    const teamId = alias?.team_id || configTeamId || null;
+    const aliased = !!alias?.team_id;
+    return { teamId, aliased };
+  };
+
+  const homeR = resolve(homeName, state.config.home_team_id);
+  const awayR = resolve(awayName, state.config.away_team_id);
+
+  state._resolverHome = { rawName: homeName, teamId: homeR.teamId, aliased: homeR.aliased, get team() { return getTeamFresh(this.teamId); } };
+  state._resolverAway = { rawName: awayName, teamId: awayR.teamId, aliased: awayR.aliased, get team() { return getTeamFresh(this.teamId); } };
 
   el.innerHTML = `
     <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Confirmá cómo se van a ver los equipos en el overlay. Si no personalizás, se usan los colores y nombre por defecto.</div>
@@ -1397,10 +1402,14 @@ function renderResolverSlot(side, label, resolved) {
 }
 
 function onResolverTeamSelect(side) {
-  const teamId = document.getElementById(`resolver-team-select-${side}`)?.value;
-  const team = teamId ? { ...state.teams.find(t => t.id === teamId) } : null;
+  const teamId = document.getElementById(`resolver-team-select-${side}`)?.value || null;
   const rawName = side === 'home' ? state._resolverHome?.rawName : state._resolverAway?.rawName;
-  const newResolved = { rawName, team, aliased: !!team };
+  const newResolved = { 
+    rawName, 
+    teamId, 
+    aliased: !!teamId,
+    get team() { return teamId ? { ...state.teams.find(t => t.id === teamId) } : null; }
+  };
   if (side === 'home') state._resolverHome = newResolved;
   else                 state._resolverAway = newResolved;
   const slotEl = document.getElementById(`resolver-slot-${side}`);
@@ -1452,7 +1461,8 @@ async function saveResolverTeam(side, rawName) {
   if (!alias) { showToast('Ingresá un nombre para el equipo', 'error'); return; }
 
   const resolved = side === 'home' ? state._resolverHome : state._resolverAway;
-  let team = resolved?.team; // usar equipo ya asignado si existe
+  let teamId = resolved?.teamId;
+  let team = teamId ? state.teams.find(t => t.id === teamId) : null;
 
   if (team?.id) {
     // Actualizar equipo existente — nombre + colores
@@ -1482,11 +1492,11 @@ async function saveResolverTeam(side, rawName) {
   // Recargar equipos frescos de Supabase
   state.teams = await sb('teams','GET',null,'?order=name') || [];
   
-  // Actualizar resolver state con objeto fresco (clon independiente)
-  const freshTeam = state.teams.find(t => t.id === team?.id);
-  if (freshTeam) {
-    if (side === 'home') state._resolverHome = { rawName, team: { ...freshTeam }, aliased: true };
-    else                 state._resolverAway = { rawName, team: { ...freshTeam }, aliased: true };
+  // Actualizar resolver state con teamId (no el objeto)
+  const savedTeamId = freshTeam?.id || team?.id;
+  if (savedTeamId) {
+    if (side === 'home') state._resolverHome = { rawName, teamId: savedTeamId, aliased: true, get team() { return state.teams.find(t => t.id === this.teamId) ? { ...state.teams.find(t => t.id === this.teamId) } : null; } };
+    else                 state._resolverAway = { rawName, teamId: savedTeamId, aliased: true, get team() { return state.teams.find(t => t.id === this.teamId) ? { ...state.teams.find(t => t.id === this.teamId) } : null; } };
   }
 
   // Re-renderizar solo este slot
@@ -1522,17 +1532,16 @@ async function applyResolverConfig() {
   const away = state._resolverAway;
 
   // Si team es null, intentar resolver desde aliases frescos
-  const resolveTeamId = async (rawName, current) => {
-    if (current?.team?.id) return current.team.id;
-    // Buscar alias en Supabase
+  const resolveTeamId = async (rawName, currentTeamId) => {
+    if (currentTeamId) return currentTeamId;
     try {
       const aliases = await sbQuery('team_aliases', `?raw_name=eq.${encodeURIComponent(rawName)}&select=team_id`);
       return aliases?.[0]?.team_id || null;
     } catch(e) { return null; }
   };
 
-  const homeTeamId = await resolveTeamId(home?.rawName, home);
-  const awayTeamId = await resolveTeamId(away?.rawName, away);
+  const homeTeamId = await resolveTeamId(home?.rawName, home?.teamId);
+  const awayTeamId = await resolveTeamId(away?.rawName, away?.teamId);
 
   // Actualizar state con los ids resueltos
   if (homeTeamId && home) {
