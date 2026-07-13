@@ -265,7 +265,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(0.6); curs
 <!-- APP -->
 <div id="app">
   <div class="header">
-    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.6</span></div>
+    <div class="header-logo">METRO VOLEY <span style="font-size:11px;color:var(--text3);letter-spacing:1px;font-family:sans-serif">v6.7</span></div>
     <div style="display:flex;align-items:center;gap:12px">
       <div class="header-status">
         <div class="status-dot" id="conn-dot"></div>
@@ -1789,11 +1789,34 @@ async function saveConfig() {
 }
 
 // ── EQUIPOS ───────────────────────────────────────────────────
-function renderTeamList() {
+async function renderTeamList() {
   const el = document.getElementById('team-list');
   if (!state.teams.length) { el.innerHTML = '<div style="color:var(--text3);font-size:13px">No hay equipos</div>'; return; }
-  el.innerHTML = state.teams.map(t => `
-    <div class="team-item" onclick="loadPlayers('${t.id}', '${t.name}')">
+
+  // Cargar aliases agrupados por team_id
+  let aliasesByTeam = {};
+  try {
+    const aliases = await sbQuery('team_aliases', '?select=raw_name,team_id');
+    (aliases || []).forEach(a => {
+      if (!aliasesByTeam[a.team_id]) aliasesByTeam[a.team_id] = [];
+      aliasesByTeam[a.team_id].push(a.raw_name);
+    });
+  } catch(e) {}
+
+  el.innerHTML = state.teams.map(t => {
+    const aliases = aliasesByTeam[t.id] || [];
+    const aliasHtml = aliases.length
+      ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+           <div style="font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">Nombres vinculados</div>
+           ${aliases.map(a => `<div style="font-size:11px;color:var(--text2);line-height:1.4;display:flex;align-items:center;gap:6px">
+             <span style="color:var(--accent);font-size:9px">●</span>
+             <span style="flex:1;overflow-wrap:break-word">${a}</span>
+             <span class="alias-del" onclick="event.stopPropagation();deleteAlias('${a.replace(/'/g,"\\'")}')"style="cursor:pointer;color:var(--text3);font-size:14px;padding:0 4px">×</span>
+           </div>`).join('')}
+         </div>`
+      : `<div style="margin-top:8px;font-size:10px;color:var(--text3)">Sin nombres vinculados aún</div>`;
+
+    return `<div class="team-item" onclick="loadPlayers('${t.id}', '${t.name}')">
       <div class="team-color-bar" style="background:linear-gradient(to right,${t.color_stripe_1},${t.color_stripe_2},${t.color_stripe_3})"></div>
       <div class="team-item-name">${t.name}</div>
       <div class="team-item-colors">
@@ -1802,9 +1825,20 @@ function renderTeamList() {
         <div class="team-color-dot" style="background:${t.color_stripe_2}"></div>
         <div class="team-color-dot" style="background:${t.color_stripe_3}"></div>
       </div>
+      ${aliasHtml}
       <button class="team-delete" onclick="event.stopPropagation();deleteTeam('${t.id}')">×</button>
       <button class="btn sm" style="margin-top:8px;width:100%" onclick="event.stopPropagation();editTeam('${t.id}')">Editar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+async function deleteAlias(rawName) {
+  if (!confirm(`¿Desvincular el nombre "${rawName}"?`)) return;
+  try {
+    await sb('team_aliases','DELETE',null,`?raw_name=eq.${encodeURIComponent(rawName)}`);
+    showToast('Nombre desvinculado', 'success');
+    renderTeamList();
+  } catch(e) { showToast('Error al desvincular', 'error'); }
 }
 
 function renderTeamSelects() {
