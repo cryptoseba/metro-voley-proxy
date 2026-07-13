@@ -1361,16 +1361,33 @@ function renderResolverSlot(side, label, resolved) {
   const s3  = t?.color_stripe_3 || '#FF5C1A';
   const bar = `linear-gradient(to right,${s1},${s2},${s3})`;
   const badge = resolved.aliased
-    ? '<span style="font-size:10px;color:var(--accent)">✓ personalizado</span>'
-    : '<span style="font-size:10px;color:var(--text3)">colores por defecto</span>';
+    ? '<span style="font-size:10px;color:var(--accent)">✓ vinculado</span>'
+    : '<span style="font-size:10px;color:var(--text3)">sin vincular</span>';
+
+  // Dropdown de equipos guardados
+  const teamOptions = '<option value="">— Elegir equipo guardado —</option>' +
+    state.teams
+      .slice()
+      .sort((a,b) => (a.name||'').localeCompare(b.name||''))
+      .map(tm => `<option value="${tm.id}" ${t && tm.id === t.id ? 'selected' : ''}>${tm.name}</option>`)
+      .join('');
 
   return `<div style="background:var(--surface2);border-radius:var(--radius);padding:14px">
     <div style="font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">${label}</div>
-    <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:4px;overflow-wrap:break-word;line-height:1.35">${displayName}</div>
-    ${t ? `<div style="font-size:11px;color:var(--text3);margin-bottom:8px;overflow-wrap:break-word">${rawName}</div>` : ''}
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px;overflow-wrap:break-word;line-height:1.3">Viene como: <b style="color:var(--text2)">${rawName}</b></div>
+
+    <div class="form-group" style="margin-bottom:8px">
+      <select id="resolver-team-select-${side}" onchange="onResolverTeamSelect('${side}')">
+        ${teamOptions}
+      </select>
+    </div>
+
     <div style="height:5px;border-radius:3px;background:${bar};margin-bottom:8px" id="resolver-bar-${side}"></div>
-    <div style="margin-bottom:10px">${badge}</div>
-    <button class="btn sm" style="width:100%" onclick="toggleResolverEdit('${side}')">${resolved.aliased ? '✏️ Editar' : '✏️ Personalizar'}</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:600;color:var(--text2)">${t ? displayName : '—'}</div>
+      ${badge}
+    </div>
+    <button class="btn sm" style="width:100%" onclick="toggleResolverEdit('${side}')">${t ? '✏️ Editar colores' : '＋ Crear nuevo equipo'}</button>
 
     <div id="resolver-edit-${side}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
       <div class="form-group" style="margin-bottom:10px">
@@ -1485,15 +1502,16 @@ async function saveResolverTeam(side, rawName) {
 
   // Guardar alias
   if (team?.id) {
-    await sb('team_aliases','POST',{ raw_name: rawName, team_id: team.id },'?on_conflict=raw_name');
+    await sb('team_aliases','DELETE',null,`?raw_name=eq.${encodeURIComponent(rawName)}`);
+    await sb('team_aliases','POST',{ raw_name: rawName, team_id: team.id },'');
   }
 
   showToast('Equipo guardado ✓', 'success');
   // Recargar equipos frescos de Supabase
   state.teams = await sb('teams','GET',null,'?order=name') || [];
-  
+
   // Actualizar resolver state con teamId (no el objeto)
-  const savedTeamId = freshTeam?.id || team?.id;
+  const savedTeamId = team?.id;
   if (savedTeamId) {
     if (side === 'home') state._resolverHome = { rawName, teamId: savedTeamId, aliased: true, get team() { return state.teams.find(t => t.id === this.teamId) ? { ...state.teams.find(t => t.id === this.teamId) } : null; } };
     else                 state._resolverAway = { rawName, teamId: savedTeamId, aliased: true, get team() { return state.teams.find(t => t.id === this.teamId) ? { ...state.teams.find(t => t.id === this.teamId) } : null; } };
@@ -1552,6 +1570,20 @@ async function applyResolverConfig() {
     const t = state.teams.find(t => t.id === awayTeamId);
     if (t) state._resolverAway = { ...away, team: t, aliased: true };
   }
+
+  // Guardar aliases: cada nombre crudo → su team_id.
+  // Esto permite que SAN GREGORIO venga con nombres distintos de FMV y DataProject
+  // y cada uno quede vinculado por separado, sin pisarse.
+  const saveAlias = async (rawName, teamId) => {
+    if (!rawName || !teamId) return;
+    try {
+      // upsert manual: borrar el alias previo de ese raw_name y crear el nuevo
+      await sb('team_aliases','DELETE',null,`?raw_name=eq.${encodeURIComponent(rawName)}`);
+      await sb('team_aliases','POST',{ raw_name: rawName, team_id: teamId },'');
+    } catch(e) {}
+  };
+  await saveAlias(home?.rawName, homeTeamId);
+  await saveAlias(away?.rawName, awayTeamId);
 
   const cfg = {
     match_id:      state.config.match_id || '',
